@@ -29,6 +29,7 @@ API = neon_urls.API
 RAIZ = os.path.join(os.path.dirname(__file__), "..")
 TABLAS_PRINCIPAL = ["normas", "descargas", "proyectos_ley", "seguimientos", "resumenes", "vocabulario"]
 TABLAS_CONTROL = ["avance", "ocr_revisado"]
+PREFIJO_ANTERIOR = "normas-textos-"   # nombre de los proyectos del sistema anterior en Neon
 LIMITE_MB = 900   # espacio que se llena de cada base nueva de texto (Neon gratis: 1024 MB)
 
 
@@ -45,8 +46,12 @@ def bases_anteriores(clave):
     """[(nombre del proyecto, direccion)] de todas las bases de la cuenta anterior."""
     salida = []
     for org in neon_urls.organizaciones(clave):
+        # Solo los proyectos del sistema de normas: la cuenta anterior tambien tiene otras aplicaciones,
+        # que no se tocan ni se listan (el registro de la tarea es publico)
         params = {"limit": 100, **({"org_id": org["id"]} if org else {})}
         for q in neon_urls._pedir("/projects", clave, **params).get("projects", []):
+            if not q["name"].startswith(PREFIJO_ANTERIOR):
+                continue
             rama = next((b for b in neon_urls._pedir(f"/projects/{q['id']}/branches", clave)["branches"]
                          if b.get("default")), None)
             if not rama:
@@ -175,7 +180,7 @@ def main():
                 raise SystemExit(f"::error::Hay dos bases con normas ({principal[0]} y {nombre}): excluir una.")
             principal = (nombre, uri)
         elif tablas.get("documentos"):
-            textos.append((nombre, uri, mb, "avance" in tablas))
+            textos.append((nombre, uri, mb, bool(tablas.get("avance")) or "ocr_revisado" in tablas))
     if not principal:
         raise SystemExit("::error::No se encontro la base principal del sistema anterior.")
     if sum(1 for t in textos if t[3]) > 1:
