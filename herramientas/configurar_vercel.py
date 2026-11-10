@@ -18,7 +18,11 @@ PROYECTO = os.getenv("VERCEL_PROYECTO", "normas-jmsr")
 H = {"Authorization": f"Bearer {os.environ['VERCEL_TOKEN'].strip()}", "Content-Type": "application/json"}
 
 
+EQUIPO = {}   # {"teamId": ...} si el token es de un equipo de Vercel (se averigua en buscar_proyecto)
+
+
 def pedir(metodo, ruta, **kw):
+    kw["params"] = {**EQUIPO, **kw.get("params", {})}
     r = requests.request(metodo, API + ruta, headers=H, timeout=60, **kw)
     if r.status_code >= 400:
         # El mensaje de Vercel no contiene claves; se muestra recortado para saber que fallo
@@ -26,8 +30,23 @@ def pedir(metodo, ruta, **kw):
     return r.json() if r.text else {}
 
 
+def buscar_proyecto():
+    """El proyecto puede estar en la cuenta personal o en un equipo de Vercel: se prueba en cada uno."""
+    r = requests.get(f"{API}/v9/projects/{PROYECTO}", headers=H, timeout=60)
+    if r.status_code == 200:
+        return r.json()
+    equipos = requests.get(f"{API}/v2/teams", headers=H, timeout=60)
+    for t in (equipos.json().get("teams", []) if equipos.status_code == 200 else []):
+        r = requests.get(f"{API}/v9/projects/{PROYECTO}", headers=H, params={"teamId": t["id"]}, timeout=60)
+        if r.status_code == 200:
+            EQUIPO["teamId"] = t["id"]
+            return r.json()
+    raise SystemExit(f"::error title=Vercel::No encontre el proyecto {PROYECTO} con este token "
+                     f"(respuesta {r.status_code}: {r.text[:200]}).")
+
+
 def main():
-    proyecto = pedir("GET", f"/v9/projects/{PROYECTO}")
+    proyecto = buscar_proyecto()
     print(f"Proyecto de Vercel encontrado: {proyecto['name']}")
 
     valores = {}
