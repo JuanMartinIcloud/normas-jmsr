@@ -10,7 +10,7 @@ export default async function Ingresar({ searchParams: parametros }) {
   return (
     <main className="contenedor angosto">
       <h1>Ingresar</h1>
-      <p className="sub">Normas legales, proyectos de ley y monitoreo empresarial.</p>
+      <p className="sub">Normas legales, proyectos de ley y monitoreo por áreas.</p>
       <FormIngresar volver={volver} />
     </main>
   );

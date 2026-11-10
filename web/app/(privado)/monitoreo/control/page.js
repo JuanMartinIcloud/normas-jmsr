@@ -4,7 +4,7 @@ import { mensajeError } from "../../../../lib/errores";
 
 export const metadata = { title: "Control de calidad · Monitoreo empresarial" };
 
-const COLOR = { OK: "#1d6b35", FALLA: "#9b1c1c", INFO: "#555" };
+const COLOR = { OK: "#2d6e50", FALLA: "#9b2c4b", INFO: "#7a6e8c" };
 const TEXTO = { OK: "✔ Correcto", FALLA: "✘ Falla", INFO: "ℹ Dato" };
 
 // Resultado del control de calidad que corre cada mañana (src/control.py)

@@ -172,8 +172,8 @@ export function htmlEjecucion(b, r, sitio) {
   const resumen = r.resumen && !r.resumen.error
     ? `<h2 style="font-size:16px">Resumen</h2><p>${esc(r.resumen.panorama)}</p><ul>${r.resumen.puntos.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`
     : "";
-  return `<div style="font-family:Arial,sans-serif;max-width:760px;color:#222">
-<h1 style="font-size:20px;color:#8f1d2c">${esc(b.nombre)}</h1>
+  return `<div style="font-family:Arial,sans-serif;max-width:760px;color:#4a4458">
+<h1 style="font-size:20px;color:#6b5b95">${esc(b.nombre)}</h1>
 <p style="color:#555">Búsqueda guardada: «${esc(b.pregunta || b.q)}» · del ${esc(r.desde)} al ${esc(r.hasta)} ·
 ${r.total_normas} normas legales y ${r.total_proyectos} proyectos de ley.</p>
 ${resumen}
