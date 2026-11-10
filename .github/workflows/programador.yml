@@ -5,6 +5,8 @@ name: Programador de tareas
 # de 6 horas. Los horarios de abajo son solo de respaldo (por si la cadena se cortara); si ya hay uno
 # encendido, el nuevo espera en cola y, al encenderse, sigue igual.
 on:
+  schedule:
+    - cron: "53 */2 * * *"
   workflow_dispatch:
 
 concurrency:

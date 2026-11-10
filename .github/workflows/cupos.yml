@@ -5,6 +5,8 @@ name: Cupos de Neon
 # Si una base llega a 4 GB (de los 5 GB gratuitos), el sistema deja de agregarle datos y detiene las tareas
 # no indispensables que la leen; a los 4,6 GB, la base principal solo atiende a la web (ver src/cupos.py).
 on:
+  schedule:
+    - cron: "37 3,7,10,18 * * *"
   workflow_dispatch:
 
 concurrency:
