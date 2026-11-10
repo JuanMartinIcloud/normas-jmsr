@@ -1,0 +1,64 @@
+name: Leer documentos escaneados (OCR)
+
+# Vuelve a leer los documentos guardados sin texto (PDF escaneados): busca otro PDF con texto y, si no
+# hay, los lee con OCR (Tesseract, gratuito). Lo lanza el programador de tareas una vez al dia; primero
+# cuenta los pendientes y solo instala el lector si hay algo que leer. Si al terminar quedan pendientes
+# y la tanda avanzo, se relanza sola (sin esperar al dia siguiente).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ocr
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  ocr:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 59
+    env:
+      DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+      TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+      TEXTOS_URL_3: ${{ secrets.TEXTOS_URL_3 }}
+      TEXTOS_URL_5: ${{ secrets.TEXTOS_URL_5 }}
+      TEXTOS_URL_6: ${{ secrets.TEXTOS_URL_6 }}
+      TEXTOS_URL_7: ${{ secrets.TEXTOS_URL_7 }}
+      TEXTOS_URL_8: ${{ secrets.TEXTOS_URL_8 }}
+      TEXTOS_URL_9: ${{ secrets.TEXTOS_URL_9 }}
+      TEXTOS_URL_10: ${{ secrets.TEXTOS_URL_10 }}
+      TEXTOS_URL_11: ${{ secrets.TEXTOS_URL_11 }}
+      TEXTOS_URL_12: ${{ secrets.TEXTOS_URL_12 }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: bash src/reintentar.sh pip install -r requirements.txt
+      - name: Contar pendientes
+        id: antes
+        run: |
+          n=$(python src/ocr_pendientes.py --contar | tail -n 1)
+          echo "Pendientes: $n"
+          echo "pendientes=$n" >> "$GITHUB_OUTPUT"
+      - name: Instalar OCR
+        if: steps.antes.outputs.pendientes != '0' && steps.antes.outputs.pendientes != ''
+        run: bash src/reintentar.sh timeout 300 bash -c "sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-spa poppler-utils"
+        timeout-minutes: 20
+      - name: Leer escaneados
+        if: steps.antes.outputs.pendientes != '0' && steps.antes.outputs.pendientes != ''
+        run: python src/ocr_pendientes.py --max-minutos 45
+      - name: Relanzar si quedan pendientes
+        if: steps.antes.outputs.pendientes != '0' && steps.antes.outputs.pendientes != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(python src/ocr_pendientes.py --contar | tail -n 1)
+          antes="${{ steps.antes.outputs.pendientes }}"
+          echo "Quedan: $n (antes: $antes)"
+          # Solo si esta tanda avanzo: si la fuente no responde, no se relanza en cadena (sigue al dia siguiente)
+          if [ -n "$n" ] && [ "$n" != "0" ] && [ "$n" -lt "$antes" ]; then gh workflow run ocr.yml --repo "${{ github.repository }}" --ref main; fi

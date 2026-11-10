@@ -1,0 +1,33 @@
+name: Alarma de consumo de Neon
+
+# Lo lanza el programador de tareas (src/programador.py) a su hora; tambien se puede lanzar a mano.
+on:
+  workflow_dispatch:
+
+jobs:
+  vigilar:
+    runs-on: ubuntu-latest
+    # Una falla no marca la tarea como error: el programador la detecta y la repite sola
+    continue-on-error: true
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: bash src/reintentar.sh pip install requests psycopg2-binary
+      - name: Revisar limites
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          TEXTOS_URL_3: ${{ secrets.TEXTOS_URL_3 }}
+          TEXTOS_URL_4: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_5: ${{ secrets.TEXTOS_URL_5 }}
+          TEXTOS_URL_6: ${{ secrets.TEXTOS_URL_6 }}
+          TEXTOS_URL_7: ${{ secrets.TEXTOS_URL_7 }}
+          TEXTOS_URL_8: ${{ secrets.TEXTOS_URL_8 }}
+          TEXTOS_URL_9: ${{ secrets.TEXTOS_URL_9 }}
+          TEXTOS_URL_10: ${{ secrets.TEXTOS_URL_10 }}
+          TEXTOS_URL_11: ${{ secrets.TEXTOS_URL_11 }}
+          TEXTOS_URL_12: ${{ secrets.TEXTOS_URL_12 }}
+        run: bash src/reintentar.sh python src/vigilar.py

@@ -1,0 +1,99 @@
+name: Reconstruir la base principal
+
+# Llena una base principal nueva desde las fuentes oficiales: crea las tablas, descarga todas las
+# normas de El Peruano desde 2015 (en 4 tramos a la vez), los proyectos del Congreso y los
+# resumenes de la ultima semana. Se puede volver a ejecutar: continua donde quedo.
+# Solo se lanza a mano (por ejemplo, si hubiera que reemplazar la base principal). Una parte que falle
+# queda marcada en rojo; al volver a ejecutarla continua donde quedo.
+on:
+  workflow_dispatch:
+
+jobs:
+  tablas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Crear tablas
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+        run: |
+          python - <<'PY'
+          import os, psycopg2
+          conn = psycopg2.connect(os.environ["DATABASE_URL"])
+          with conn, conn.cursor() as cur:
+              cur.execute(open("schema.sql", encoding="utf-8").read())
+              cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY 1")
+              print("Tablas:", [r[0] for r in cur.fetchall()])
+          conn.close()
+          PY
+
+  normas:
+    needs: tablas
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        tramo:
+          - { desde: "2023-07-01", hasta: "" }
+          - { desde: "2020-10-01", hasta: "2023-06-30" }
+          - { desde: "2018-01-01", hasta: "2020-09-30" }
+          - { desde: "2015-01-01", hasta: "2017-12-31" }
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Normas desde ${{ matrix.tramo.desde }}
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+        run: >
+          python src/backfill.py --desde "${{ matrix.tramo.desde }}"
+          ${{ matrix.tramo.hasta && format('--hasta {0}', matrix.tramo.hasta) || '' }}
+          --max-dias 5000 --max-minutos 290
+
+  proyectos:
+    needs: tablas
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Proyectos de ley del Congreso
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+        run: python src/run_congreso.py
+
+  resumenes:
+    needs: [normas, proyectos]
+    if: always() && needs.proyectos.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Resumenes de la ultima semana
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODELOS: ${{ vars.GEMINI_MODELOS }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+        run: python src/resumen.py --sin-descarga

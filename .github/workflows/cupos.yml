@@ -1,0 +1,40 @@
+name: Cupos de Neon
+
+# Mide 4 veces al dia cuanto ha transferido cada base en el mes (API de Neon; no despierta las bases):
+# 10 p. m., 2 a. m. y 5 a. m. (antes y durante las tareas de la noche) y 1 p. m. (hora de Lima).
+# Si una base llega a 4 GB (de los 5 GB gratuitos), el sistema deja de agregarle datos y detiene las tareas
+# no indispensables que la leen; a los 4,6 GB, la base principal solo atiende a la web (ver src/cupos.py).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: cupos
+  cancel-in-progress: false
+
+jobs:
+  medir:
+    runs-on: ubuntu-latest
+    # Una falla no marca la tarea como error: se repite en la siguiente medicion
+    continue-on-error: true
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: bash src/reintentar.sh pip install requests psycopg2-binary
+      - name: Medir transferencia
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          TEXTOS_URL_4: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          TEXTOS_URL_3: ${{ secrets.TEXTOS_URL_3 }}
+          TEXTOS_URL_5: ${{ secrets.TEXTOS_URL_5 }}
+          TEXTOS_URL_6: ${{ secrets.TEXTOS_URL_6 }}
+          TEXTOS_URL_7: ${{ secrets.TEXTOS_URL_7 }}
+          TEXTOS_URL_8: ${{ secrets.TEXTOS_URL_8 }}
+          TEXTOS_URL_9: ${{ secrets.TEXTOS_URL_9 }}
+          TEXTOS_URL_10: ${{ secrets.TEXTOS_URL_10 }}
+          TEXTOS_URL_11: ${{ secrets.TEXTOS_URL_11 }}
+          TEXTOS_URL_12: ${{ secrets.TEXTOS_URL_12 }}
+        run: bash src/reintentar.sh python src/cupos.py

@@ -1,0 +1,29 @@
+name: Rubro con IA
+
+# Clasifica con IA (Lite) el rubro de las normas que las reglas no pudieron clasificar. Como maximo 300
+# consultas por dia. Lo lanza el programador de tareas cada madrugada; tambien se puede lanzar a mano.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: clasificar
+  cancel-in-progress: false
+
+jobs:
+  clasificar:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 59
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: bash src/reintentar.sh pip install -r requirements.txt
+      - name: Clasificar
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python src/clasificar_ia.py --max-consultas 300 --max-minutos 50

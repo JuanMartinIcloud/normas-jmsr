@@ -1,0 +1,47 @@
+name: Resumen diario con IA
+
+# Lo lanza el programador de tareas (src/programador.py) a su hora; tambien se puede lanzar a mano.
+on:
+  workflow_dispatch:
+    inputs:
+      fecha:
+        description: "Fecha a resumir (YYYY-MM-DD). Vacio = ayer"
+        required: false
+        default: ""
+      forzar:
+        description: "Rehacer aunque ya exista"
+        type: boolean
+        default: false
+
+concurrency:
+  group: resumen
+  cancel-in-progress: false
+
+jobs:
+  resumen:
+    runs-on: ubuntu-latest
+    # Una falla no marca la tarea como error: el programador la detecta y la repite sola
+    continue-on-error: true
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: bash src/reintentar.sh pip install -r requirements.txt
+      - name: Generar resumen
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODELOS: ${{ vars.GEMINI_MODELOS }}
+        run: |
+          set +e
+          bash src/reintentar.sh python src/resumen.py ${{ github.event.inputs.fecha }} ${{ github.event.inputs.forzar == 'true' && '--forzar' || '' }} > salida.log 2>&1
+          codigo=$?
+          cat salida.log
+          if [ $codigo -ne 0 ]; then
+            tail -n 9 salida.log | while IFS= read -r linea; do echo "::error::${linea:0:900}"; done
+          fi
+          exit $codigo

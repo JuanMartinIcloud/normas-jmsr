@@ -1,0 +1,29 @@
+name: Descarga diaria
+
+# Lo lanza el programador de tareas (src/programador.py) a su hora; tambien se puede lanzar a mano.
+on:
+  workflow_dispatch:
+    inputs:
+      fecha:
+        description: "Fecha a descargar (YYYY-MM-DD). Vacio = ayer y hoy"
+        required: false
+        default: ""
+
+jobs:
+  diario:
+    runs-on: ubuntu-latest
+    # Una falla no marca la tarea como error: el programador la detecta y la repite sola
+    continue-on-error: true
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: bash src/reintentar.sh pip install -r requirements.txt
+      - name: Descargar normas
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+        run: bash src/reintentar.sh python src/run_dia.py ${{ github.event.inputs.fecha }}

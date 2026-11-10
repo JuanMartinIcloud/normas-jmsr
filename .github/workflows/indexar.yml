@@ -1,0 +1,55 @@
+name: Indexar textos completos
+
+# Guarda el texto completo de las normas y proyectos NUEVOS (lo ya guardado no se vuelve a descargar).
+# Lo lanza el programador de tareas una vez al dia (4:00 a. m. de Lima), despues de la descarga de normas,
+# del Congreso y del resumen. Tambien se puede lanzar a mano.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: indexar
+  cancel-in-progress: false
+
+jobs:
+  indexar:
+    runs-on: ubuntu-latest
+    # Una falla no marca la tarea como error: el programador la detecta y la repite
+    continue-on-error: true
+    timeout-minutes: 59
+    strategy:
+      fail-fast: false
+      matrix:
+        tipo: [normas, proyectos]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: bash src/reintentar.sh pip install -r requirements.txt
+      # OCR para PDF escaneados (si no se pudiera instalar, el indexado sigue igual, sin OCR)
+      - run: timeout 300 bash -c "sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr tesseract-ocr-spa poppler-utils" || true
+        timeout-minutes: 6
+        continue-on-error: true
+      - name: Texto completo (${{ matrix.tipo }})
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          TEXTOS_URL_3: ${{ secrets.TEXTOS_URL_3 }}
+          TEXTOS_URL_5: ${{ secrets.TEXTOS_URL_5 }}
+          TEXTOS_URL_6: ${{ secrets.TEXTOS_URL_6 }}
+          TEXTOS_URL_7: ${{ secrets.TEXTOS_URL_7 }}
+          TEXTOS_URL_8: ${{ secrets.TEXTOS_URL_8 }}
+          TEXTOS_URL_9: ${{ secrets.TEXTOS_URL_9 }}
+          TEXTOS_URL_10: ${{ secrets.TEXTOS_URL_10 }}
+          TEXTOS_URL_11: ${{ secrets.TEXTOS_URL_11 }}
+          TEXTOS_URL_12: ${{ secrets.TEXTOS_URL_12 }}
+        run: |
+          set +e
+          python src/indexar.py ${{ matrix.tipo }} --max-minutos 50 > salida.log 2>&1
+          codigo=$?
+          cat salida.log
+          if [ $codigo -ne 0 ]; then
+            tail -n 9 salida.log | while IFS= read -r linea; do echo "::error::${linea:0:900}"; done
+          fi
+          exit $codigo

@@ -1,0 +1,36 @@
+name: Diagnostico (solo lectura)
+
+# Mediciones que no cambian nada: estado de los proyectos de Neon, consultas mas pesadas y conteos.
+# El resultado queda como aviso de la ejecucion (no se guarda en el repositorio).
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "neon | consultas | conteos | seguridad | web | ia | auditoria | verificar_dias | detalle | leyes_faltantes | casos | clasificacion | depurar_leyes | clasificacion_datos"
+        default: "neon"
+
+jobs:
+  diagnostico:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Medir
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          TEXTOS_URL_3: ${{ secrets.TEXTOS_URL_3 }}
+          TEXTOS_URL_5: ${{ secrets.TEXTOS_URL_5 }}
+          TEXTOS_URL_6: ${{ secrets.TEXTOS_URL_6 }}
+          TEXTOS_URL_7: ${{ secrets.TEXTOS_URL_7 }}
+          TEXTOS_URL_8: ${{ secrets.TEXTOS_URL_8 }}
+          TEXTOS_URL_9: ${{ secrets.TEXTOS_URL_9 }}
+          TEXTOS_URL_10: ${{ secrets.TEXTOS_URL_10 }}
+          TEXTOS_URL_11: ${{ secrets.TEXTOS_URL_11 }}
+          TEXTOS_URL_12: ${{ secrets.TEXTOS_URL_12 }}
+        run: python src/diagnostico.py "${{ github.event.inputs.modo || 'neon' }}"

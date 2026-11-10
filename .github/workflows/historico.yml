@@ -1,0 +1,39 @@
+name: Carga historica por tandas
+
+# Lo lanza el programador de tareas (src/programador.py) a su hora; tambien se puede lanzar a mano.
+on:
+  workflow_dispatch:
+    inputs:
+      desde:
+        description: "Fecha mas antigua a cubrir (YYYY-MM-DD)"
+        default: "2015-01-01"
+      max_dias:
+        description: "Maximo de dias por tanda"
+        default: "400"
+
+concurrency:
+  group: historico
+  cancel-in-progress: false
+
+jobs:
+  tanda:
+    runs-on: ubuntu-latest
+    # Una falla no marca la tarea como error: el programador la detecta y la repite sola
+    continue-on-error: true
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Descargar tanda
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+        run: >
+          python src/backfill.py
+          --desde "${{ github.event.inputs.desde || '2015-01-01' }}"
+          --max-dias "${{ github.event.inputs.max_dias || '400' }}"
+          --max-minutos 330

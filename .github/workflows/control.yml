@@ -1,0 +1,38 @@
+name: Control de calidad
+
+# Cada manana comprueba con datos que todo este completo y correcto (ver src/control.py). Solo lee.
+# Lo lanza el programador de tareas a las 7:00 a. m. (hora de Lima); tambien se puede lanzar a mano.
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 30
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+      TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+      TEXTOS_URL_3: ${{ secrets.TEXTOS_URL_3 }}
+      TEXTOS_URL_5: ${{ secrets.TEXTOS_URL_5 }}
+      TEXTOS_URL_6: ${{ secrets.TEXTOS_URL_6 }}
+      TEXTOS_URL_7: ${{ secrets.TEXTOS_URL_7 }}
+      TEXTOS_URL_8: ${{ secrets.TEXTOS_URL_8 }}
+      TEXTOS_URL_9: ${{ secrets.TEXTOS_URL_9 }}
+      TEXTOS_URL_10: ${{ secrets.TEXTOS_URL_10 }}
+      TEXTOS_URL_11: ${{ secrets.TEXTOS_URL_11 }}
+      TEXTOS_URL_12: ${{ secrets.TEXTOS_URL_12 }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: bash src/reintentar.sh pip install -r requirements.txt
+      - name: Comprobar
+        run: python src/control.py

@@ -1,0 +1,32 @@
+name: Programador de tareas
+
+# Lanza las tareas diarias a su hora, en orden, y repite las que fallaron (ver src/programador.py).
+# Queda encendido: revisa cada 10 minutos en las horas con tareas y se vuelve a lanzar solo antes del limite
+# de 6 horas. Los horarios de abajo son solo de respaldo (por si la cadena se cortara); si ya hay uno
+# encendido, el nuevo espera en cola y, al encenderse, sigue igual.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: programador
+  cancel-in-progress: false
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  programar:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Lanzar las tareas que tocan
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python src/programador.py

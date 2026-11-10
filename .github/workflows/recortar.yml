@@ -1,0 +1,38 @@
+name: Recortar textos de normas
+
+# Deja en el texto completo guardado solo la norma (sin el final de la anterior ni el inicio de la siguiente,
+# que traen las paginas de El Peruano). Solo se lanza a mano. "simular" no escribe nada; "aplicar" escribe.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "simular | aplicar"
+        default: "simular"
+
+concurrency:
+  group: recortar-textos
+
+jobs:
+  recortar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: bash src/reintentar.sh pip install -r requirements.txt
+      - name: Recortar
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          TEXTOS_URL_3: ${{ secrets.TEXTOS_URL_3 }}
+          TEXTOS_URL_5: ${{ secrets.TEXTOS_URL_5 }}
+          TEXTOS_URL_6: ${{ secrets.TEXTOS_URL_6 }}
+          TEXTOS_URL_7: ${{ secrets.TEXTOS_URL_7 }}
+          TEXTOS_URL_8: ${{ secrets.TEXTOS_URL_8 }}
+          TEXTOS_URL_9: ${{ secrets.TEXTOS_URL_9 }}
+          TEXTOS_URL_10: ${{ secrets.TEXTOS_URL_10 }}
+          TEXTOS_URL_11: ${{ secrets.TEXTOS_URL_11 }}
+          TEXTOS_URL_12: ${{ secrets.TEXTOS_URL_12 }}
+        run: python src/recortar_textos.py "${{ github.event.inputs.modo || 'simular' }}"

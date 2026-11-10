@@ -1,0 +1,19 @@
+name: Busquedas guardadas
+
+on:
+  workflow_dispatch:
+
+jobs:
+  busquedas:
+    runs-on: ubuntu-latest
+    # Una falla no marca la tarea como error: el programador la detecta y la repite sola
+    continue-on-error: true
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v6
+      - run: bash src/reintentar.sh pip install psycopg2-binary requests
+      - name: Ejecutar las busquedas guardadas que tocan hoy
+        env:
+          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+        run: bash src/reintentar.sh python3 src/busquedas_tarea.py
