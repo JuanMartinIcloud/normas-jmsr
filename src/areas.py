@@ -34,7 +34,16 @@ LOTE_FILTRO = 40
 MAX_TEXTO = 25000
 INICIO_HISTORIAL = date(2015, 1, 1)
 CALIFICACIONES = ["Favorable", "Desfavorable", "Para seguimiento"]
-MODELOS = gemini.modelos_lite()   # todo el trabajo automatico usa los Lite; los Flash quedan para el usuario
+# Modelos de IA segun el trabajo. Cada modelo tiene su propio cupo diario gratis (se renueva a las 3:00 de Lima).
+# - Mes en curso: los Lite y la reserva.
+# - Historia (meses anteriores, de a poco cada noche): SOLO los dos primeros Lite. Cuando esos dos llegan a su
+#   limite del dia, la historia se detiene hasta la noche siguiente; asi el resto del cupo (otros modelos,
+#   Gemma y los Flash) queda libre para los pedidos «Revisar este mes» que alguien haga durante el dia.
+# - Pedidos de la web: todos los Lite, la reserva y, al final, los Flash.
+MODELOS_MES = gemini.modelos_lite()
+MODELOS_HISTORIA = gemini.LITE[:2]
+MODELOS_PEDIDOS = list(dict.fromkeys(gemini.modelos_lite() + gemini.FLASH))
+MODELOS = MODELOS_MES   # los que se usan en este momento (cambia segun el trabajo)
 
 
 class Reloj:
@@ -480,6 +489,8 @@ def mes_completo(ini, fin, area_ids):
 
 def procesar_pedidos(reloj):
     """Area y mes pedidos desde la web («Revisar este mes»), en orden de llegada, con su avance."""
+    global MODELOS
+    MODELOS = MODELOS_PEDIDOS
     pedidos = consultar("""SELECT id, area_id, mes FROM area_pedidos WHERE estado <> 'hecho' ORDER BY creado_en""")
     print(f"Pedidos pendientes: {len(pedidos)}")
     for pid, area_id, mes in pedidos:
@@ -503,7 +514,10 @@ def procesar_pedidos(reloj):
 
 
 def procesar_historico(reloj):
-    """Meses anteriores, del mas reciente al mas antiguo, para todas las areas activas."""
+    """Meses anteriores, del mas reciente al mas antiguo, para todas las areas activas. Cada documento queda
+    anotado al revisarse (area_cobertura): la noche siguiente sigue exactamente en el documento donde quedo."""
+    global MODELOS
+    MODELOS = MODELOS_HISTORIA
     ids = [a[0] for a in areas_activas()]
     mes = (hoy_lima().replace(day=1) - timedelta(days=1)).replace(day=1)   # el mes anterior
     while mes >= INICIO_HISTORIAL and reloj.queda():
@@ -536,6 +550,8 @@ def main():
         hoy = hoy_lima()
         inicio = hoy.replace(day=1)
         desde = (inicio - timedelta(days=1)).replace(day=1) if hoy.day <= 5 else inicio
+        global MODELOS
+        MODELOS = MODELOS_MES
         if not procesar_rango(desde, hoy + timedelta(days=1), None, reloj):
             return
         # Lo que quede de tiempo y de cupo de la IA, para el historial

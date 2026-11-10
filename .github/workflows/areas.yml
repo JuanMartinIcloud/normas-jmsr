@@ -12,6 +12,9 @@ on:
       fechas:
         description: "Para 'rango': desde hasta (AAAA-MM-DD AAAA-MM-DD)"
         default: ""
+      minutos:
+        description: "Minutos maximos (vacio: 300, o 120 para pedidos)"
+        default: ""
 
 # Un pedido de la web no espera a que termine la ejecucion de la noche: van en grupos distintos
 concurrency:
@@ -35,11 +38,14 @@ jobs:
           cache: pip
       - run: bash src/reintentar.sh pip install -r requirements.txt
       - name: Analizar
+        env:
+          MINUTOS: ${{ github.event.inputs.minutos }}
         run: |
           set +e
           MODO="${{ github.event.inputs.modo || 'diario' }}"
           MAX=300
           [ "$MODO" = "pedidos" ] && MAX=120
+          [[ "$MINUTOS" =~ ^[0-9]+$ ]] && MAX=$MINUTOS
           bash src/reintentar.sh python src/areas.py $MODO ${{ github.event.inputs.fechas }} --max-minutos $MAX > salida.log 2>&1; codigo=$?
           cat salida.log
           grep -E "^(20|Pedido|Mes|  la IA|  revisados|Documentos revisados)" salida.log | tail -n 15 | while IFS= read -r l; do echo "::notice::${l:0:900}"; done
