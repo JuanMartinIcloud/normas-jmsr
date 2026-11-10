@@ -39,7 +39,11 @@ MODELOS = gemini.modelos_lite()   # todo el trabajo automatico usa los Lite; los
 
 class Reloj:
     def __init__(self, minutos):
-        self.fin = time.time() + minutos * 60
+        self.inicio = time.time()
+        self.fin = self.inicio + minutos * 60
+
+    def minutos(self):
+        return (time.time() - self.inicio) / 60
 
     def queda(self, margen=60):
         return time.time() < self.fin - margen
@@ -427,8 +431,29 @@ def procesar_rango(desde, hasta, area_ids, reloj, avance=None):
     base[0] = hn
     if not ok1:
         return False
-    _, ok2 = _procesar("P", proyectos, todas, reloj, av)
+    hp, ok2 = _procesar("P", proyectos, todas, reloj, av)
+    print(f"  revisados: {hn} normas y {hp} proyectos en {reloj.minutos():.1f} min")
     return ok2
+
+
+def ver(desde, hasta):
+    """Muestra el resultado del monitoreo por areas en un rango (para revisar la calidad)."""
+    filas = consultar("""SELECT a.nombre, r.tipo, coalesce(n.tipo || ' ' || n.numero, 'Proyecto ' || p.numero),
+                                coalesce(n.sumilla, p.titulo), r.calificacion, r.puntaje, r.impacto, r.comentario
+                         FROM area_revision r JOIN areas a ON a.id = r.area_id
+                         LEFT JOIN normas n ON r.tipo = 'N' AND n.id = r.ref_id
+                         LEFT JOIN proyectos_ley p ON r.tipo = 'P' AND p.id = r.ref_id
+                         WHERE r.fecha BETWEEN %s AND %s ORDER BY a.nombre, r.puntaje DESC""", (desde, hasta))
+    (docs, completos) = consultar("""SELECT count(*), count(*) FILTER (WHERE c.areas @> (SELECT array_agg(id) FROM areas WHERE activa))
+                                     FROM area_cobertura c WHERE c.fecha BETWEEN %s AND %s""", (desde, hasta))[0]
+    print(f"Documentos revisados: {docs} ({completos} para todas las areas). Analisis guardados: {len(filas)}")
+    actual = None
+    for area, tipo, doc, sumilla, cal, punt, imp, com in filas:
+        if area != actual:
+            actual = area
+            print(f"\n=== {area} ===")
+        print(f"- [{cal} {punt}/10, impacto {imp}] {doc}: {(sumilla or '')[:160]}")
+        print(f"    {(com or '')[:400]}")
 
 
 def hoy_lima():
@@ -493,10 +518,13 @@ def procesar_historico(reloj):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("modo", choices=["diario", "pedidos", "historico", "rango"])
+    ap.add_argument("modo", choices=["diario", "pedidos", "historico", "rango", "ver"])
     ap.add_argument("fechas", nargs="*")
     ap.add_argument("--max-minutos", type=float, default=300)
     a = ap.parse_args()
+    if a.modo == "ver":
+        ver(date.fromisoformat(a.fechas[0]), date.fromisoformat(a.fechas[1]))
+        return
     reloj = Reloj(a.max_minutos)
     gemini.verificar_clave()
     db.conectar().close()   # aplica las etapas pendientes del esquema

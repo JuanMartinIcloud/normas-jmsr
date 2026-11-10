@@ -42,6 +42,6 @@ jobs:
           [ "$MODO" = "pedidos" ] && MAX=120
           bash src/reintentar.sh python src/areas.py $MODO ${{ github.event.inputs.fechas }} --max-minutos $MAX > salida.log 2>&1; codigo=$?
           cat salida.log
-          grep -E "^(20|Pedido|Mes|  la IA)" salida.log | tail -n 15 | while IFS= read -r l; do echo "::notice::${l:0:900}"; done
+          grep -E "^(20|Pedido|Mes|  la IA|  revisados|Documentos revisados)" salida.log | tail -n 15 | while IFS= read -r l; do echo "::notice::${l:0:900}"; done
           if [ $codigo -ne 0 ]; then tail -n 9 salida.log | while IFS= read -r l; do echo "::error::${l:0:900}"; done; fi
           exit $codigo
