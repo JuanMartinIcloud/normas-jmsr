@@ -34,15 +34,16 @@ LOTE_FILTRO = 40
 MAX_TEXTO = 25000
 INICIO_HISTORIAL = date(2015, 1, 1)
 CALIFICACIONES = ["Favorable", "Desfavorable", "Para seguimiento"]
-# Modelos de IA segun el trabajo. Cada modelo tiene su propio cupo diario gratis (se renueva a las 3:00 de Lima).
-# - Mes en curso: los Lite y la reserva.
-# - Historia (meses anteriores, de a poco cada noche): SOLO los dos primeros Lite. Cuando esos dos llegan a su
-#   limite del dia, la historia se detiene hasta la noche siguiente; asi el resto del cupo (otros modelos,
-#   Gemma y los Flash) queda libre para los pedidos «Revisar este mes» que alguien haga durante el dia.
-# - Pedidos de la web: todos los Lite, la reserva y, al final, los Flash.
-MODELOS_MES = gemini.modelos_lite()
-MODELOS_HISTORIA = gemini.LITE[:2]
-MODELOS_PEDIDOS = list(dict.fromkeys(gemini.modelos_lite() + gemini.FLASH))
+# Modelos de IA: SOLO los Flash (los mas potentes que da gratis Google; los Pro no tienen cupo gratuito y los
+# Lite son mas debiles, no se usan para el monitoreo). Cada modelo tiene su propio cupo diario (se renueva a las
+# 3:00 de Lima). Si los Flash se agotan, el trabajo espera a la noche siguiente; nunca se usa un modelo mas debil.
+# - Mes en curso y pedidos de la web: todos los Flash, del mas nuevo al mas antiguo.
+# - Historia (meses anteriores, de a poco cada noche): solo tres Flash anteriores. Cuando esos tres llegan a su
+#   limite del dia, la historia se detiene hasta la noche siguiente; asi los Flash mas nuevos quedan libres para
+#   los pedidos «Revisar este mes» que alguien haga durante el dia.
+MODELOS_MES = list(gemini.FLASH)
+MODELOS_HISTORIA = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3-flash-preview"]
+MODELOS_PEDIDOS = list(gemini.FLASH)
 MODELOS = MODELOS_MES   # los que se usan en este momento (cambia segun el trabajo)
 
 
@@ -445,10 +446,17 @@ def procesar_rango(desde, hasta, area_ids, reloj, avance=None):
     return ok2
 
 
+def rehacer(desde, hasta):
+    """Borra el monitoreo por areas de un rango para volver a hacerlo (por ejemplo, con otros modelos)."""
+    for tabla in ("area_revision", "area_cobertura"):
+        consultar(f"DELETE FROM {tabla} WHERE fecha BETWEEN %s AND %s", (desde, hasta))
+    print(f"Monitoreo por areas borrado de {desde} a {hasta}; se vuelve a revisar.")
+
+
 def ver(desde, hasta):
     """Muestra el resultado del monitoreo por areas en un rango (para revisar la calidad)."""
     filas = consultar("""SELECT a.nombre, r.tipo, coalesce(n.tipo || ' ' || n.numero, 'Proyecto ' || p.numero),
-                                coalesce(n.sumilla, p.titulo), r.calificacion, r.puntaje, r.impacto, r.comentario
+                                coalesce(n.sumilla, p.titulo), r.calificacion, r.puntaje, r.impacto, r.comentario, r.modelo
                          FROM area_revision r JOIN areas a ON a.id = r.area_id
                          LEFT JOIN normas n ON r.tipo = 'N' AND n.id = r.ref_id
                          LEFT JOIN proyectos_ley p ON r.tipo = 'P' AND p.id = r.ref_id
@@ -457,11 +465,11 @@ def ver(desde, hasta):
                                      FROM area_cobertura c WHERE c.fecha BETWEEN %s AND %s""", (desde, hasta))[0]
     print(f"Documentos revisados: {docs} ({completos} para todas las areas). Analisis guardados: {len(filas)}")
     actual = None
-    for area, tipo, doc, sumilla, cal, punt, imp, com in filas:
+    for area, tipo, doc, sumilla, cal, punt, imp, com, modelo in filas:
         if area != actual:
             actual = area
             print(f"\n=== {area} ===")
-        print(f"- [{cal} {punt}/10, impacto {imp}] {doc}: {(sumilla or '')[:160]}")
+        print(f"- [{cal} {punt}/10, impacto {imp}, {modelo}] {doc}: {(sumilla or '')[:160]}")
         print(f"    {(com or '')[:400]}")
 
 
@@ -532,7 +540,7 @@ def procesar_historico(reloj):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("modo", choices=["diario", "pedidos", "historico", "rango", "ver"])
+    ap.add_argument("modo", choices=["diario", "pedidos", "historico", "rango", "ver", "rehacer"])
     ap.add_argument("fechas", nargs="*")
     ap.add_argument("--max-minutos", type=float, default=300)
     a = ap.parse_args()
@@ -560,6 +568,10 @@ def main():
         procesar_historico(reloj)
     elif a.modo == "historico":
         procesar_historico(reloj)
+    elif a.modo == "rehacer":
+        desde, hasta = date.fromisoformat(a.fechas[0]), date.fromisoformat(a.fechas[1])
+        rehacer(desde, hasta)
+        procesar_rango(desde, hasta, None, reloj)
     elif a.modo == "rango":
         procesar_rango(date.fromisoformat(a.fechas[0]), date.fromisoformat(a.fechas[1]), None, reloj)
 
