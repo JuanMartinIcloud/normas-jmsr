@@ -2,10 +2,12 @@
   /* Paleta pastel de Jurisbot (JMSR) */
   --fondo: #faf8fc;
   --tarjeta: #ffffff;
-  --texto: #3b3449;
-  --suave: #5f5473;
+  --texto: #4a3880;
+  --suave: #6b5b95;
   --linea: #dcd5ea;
   --acento: #5f4f8c;
+  --cielo-claro: #e3eef7;
+  --cielo: #3d6a8f;
   --acento-oscuro: #4a3880;
   --acento-claro: #ede7f6;
   --menta: #8fb9a8;
@@ -49,10 +51,11 @@ h2, h3 { color: var(--acento-oscuro); }
   text-decoration: none;
   font-size: 0.95rem;
 }
+.atajo:hover { background: var(--menta-claro); border-color: var(--menta); }
 .atajo.activo { background: var(--acento); border-color: var(--acento); color: #fff; }
 
 .filtros {
-  background: var(--tarjeta);
+  background: var(--cielo-claro);
   border: 1px solid var(--linea);
   border-radius: 12px;
   padding: 16px;
@@ -67,7 +70,7 @@ h2, h3 { color: var(--acento-oscuro); }
   padding: 8px 10px;
   border: 1px solid var(--linea);
   border-radius: 8px;
-  background: var(--fondo);
+  background: var(--tarjeta);
   color: var(--texto);
   min-width: 0;
 }
@@ -93,6 +96,7 @@ h2, h3 { color: var(--acento-oscuro); }
 .norma {
   background: var(--tarjeta);
   border: 1px solid var(--linea);
+  border-left: 4px solid var(--menta);
   border-radius: 12px;
   padding: 14px 16px;
 }
@@ -115,8 +119,9 @@ h2, h3 { color: var(--acento-oscuro); }
 .paginas { display: flex; gap: 12px; justify-content: center; align-items: center; margin-top: 24px; }
 
 .error {
-  background: var(--acento-claro);
-  border: 1px solid var(--acento);
+  background: var(--rosa-claro);
+  border: 1px solid #e8a4b8;
+  color: var(--rojo);
   border-radius: 12px;
   padding: 16px;
 }
@@ -124,7 +129,7 @@ h2, h3 { color: var(--acento-oscuro); }
 .vacio { text-align: center; color: var(--suave); padding: 40px 0; }
 
 .panel {
-  background: var(--tarjeta);
+  background: var(--menta-claro);
   border: 1px solid var(--linea);
   border-radius: 12px;
   padding: 14px 16px;
@@ -135,7 +140,7 @@ h2, h3 { color: var(--acento-oscuro); }
 
 /* Resumen diario con IA */
 .ia {
-  background: var(--tarjeta);
+  background: var(--acento-claro);
   border: 1px solid var(--linea);
   border-left: 4px solid var(--acento);
   border-radius: 12px;
@@ -162,7 +167,8 @@ h2, h3 { color: var(--acento-oscuro); }
 .ia-panorama { font-size: 1.02rem; }
 .ia-destacadas { display: grid; gap: 10px; }
 .ia-destacada {
-  background: var(--fondo);
+  background: var(--tarjeta);
+  border-left: 4px solid #e8a48c;
   border: 1px solid var(--linea);
   border-radius: 10px;
   padding: 10px 12px;
@@ -175,14 +181,14 @@ h2, h3 { color: var(--acento-oscuro); }
   padding: 1px 8px;
   border-radius: 999px;
   border: 1px solid var(--linea);
-  background: var(--fondo);
+  background: var(--cielo-claro);
   color: var(--acento);
   text-decoration: none;
   white-space: nowrap;
 }
 a.ia-ref:hover { border-color: var(--acento); }
 .ia-aviso {
-  background: var(--acento-claro);
+  background: var(--durazno-claro);
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 0.9rem;
@@ -244,7 +250,7 @@ body:has(.bandeja) .contenedor { padding-bottom: 140px; }
 .terminos { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 12px; font-size: 0.9rem; }
 .terminos .etq { text-decoration: none; }
 .fragmento { margin: 6px 0 8px; font-size: 0.9rem; color: var(--suave); border-left: 3px solid var(--linea); padding-left: 10px; }
-.fragmento mark { background: var(--acento-claro); color: var(--texto); padding: 0 2px; border-radius: 3px; }
+.fragmento mark { background: var(--durazno-claro); color: var(--texto); padding: 0 2px; border-radius: 3px; }
 .fragmento-etq { font-weight: 600; }
 
 /* Filtrar dentro de los resultados */
