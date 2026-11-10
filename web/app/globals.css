@@ -332,3 +332,18 @@ a.kpi .t { text-decoration: underline; }
 .principales p { margin: 4px 0 0; font-size: 0.9rem; color: #1f2328; }
 .kpi .d { font-size: 0.75rem; margin-top: 2px; color: #57606a; }
 .etq.ley { background: #e3f4e8; color: #1d6b35; font-weight: 600; }
+
+/* Monitoreo por areas */
+.areas-grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin: 0 0 16px; }
+.area-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--linea); border-radius: 10px; background: #fff; cursor: pointer; }
+.area-item input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
+.area-item a { font-weight: 600; }
+.area-item small { display: block; color: var(--suave); font-size: 0.82rem; margin-top: 3px; }
+.area-item .etq { margin-left: 6px; }
+.boton.desactivado { opacity: 0.5; pointer-events: none; }
+.otra-area { margin-top: 24px; }
+.cifras-area { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin: 0 0 14px; }
+.avance-pedido { display: grid; gap: 6px; margin-top: 6px; }
+.barra-avance { height: 10px; border-radius: 6px; background: var(--fondo); border: 1px solid var(--linea); overflow: hidden; max-width: 420px; }
+.barra-avance > div { height: 100%; background: var(--acento); transition: width 0.6s; }
+.bloque-area { margin-top: 28px; padding-top: 12px; border-top: 2px solid var(--linea); }

@@ -1,6 +1,10 @@
 """Configuracion central. Todo se puede sobreescribir con variables de entorno."""
 import os
 
+import neon_urls
+
+neon_urls.completar_entorno()   # direcciones de las bases a partir de NEON_API_KEY
+
 BASE_URL = "https://diariooficial.elperuano.pe"
 
 # Endpoint real confirmado con el sondeo: formulario POST con fechas dd/mm/aaaa

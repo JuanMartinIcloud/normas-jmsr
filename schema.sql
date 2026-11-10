@@ -254,3 +254,59 @@ CREATE TABLE IF NOT EXISTS control_calidad (
 -- Etapa 15: proyectos de ley cuyo rubro ya reviso la IA (src/clasificar_ia.py): no se le vuelve a preguntar y
 -- la descarga diaria no le borra el rubro que puso la IA.
 ALTER TABLE proyectos_ley ADD COLUMN IF NOT EXISTS rubro_ia BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Etapa 16: monitoreo por areas (sistema normas-jmsr).
+-- areas: las areas que se pueden monitorear (la lista base y las que agregan los usuarios con «Otra área»).
+CREATE TABLE IF NOT EXISTS areas (
+    id          SERIAL PRIMARY KEY,
+    nombre      TEXT NOT NULL UNIQUE,
+    descripcion TEXT NOT NULL,
+    activa      BOOLEAN NOT NULL DEFAULT TRUE,
+    origen      TEXT NOT NULL DEFAULT 'base',          -- base | usuario
+    sinonimos   TEXT[] NOT NULL DEFAULT '{}',          -- otros nombres con que la pidieron
+    creada_por  TEXT,
+    creada_en   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- area_cobertura: para cada documento (N = norma, P = proyecto), las areas para las que ya se reviso.
+-- Una sola fila por documento (no una por documento y area), para que ocupe poco espacio.
+CREATE TABLE IF NOT EXISTS area_cobertura (
+    tipo     CHAR(1)   NOT NULL,
+    ref_id   BIGINT    NOT NULL,
+    fecha    DATE      NOT NULL,
+    areas    INTEGER[] NOT NULL DEFAULT '{}',
+    PRIMARY KEY (tipo, ref_id)
+);
+CREATE INDEX IF NOT EXISTS idx_area_cob_fecha ON area_cobertura (fecha);
+-- area_revision: solo los documentos que SI afectan a un area, con su analisis para esa area.
+CREATE TABLE IF NOT EXISTS area_revision (
+    tipo         CHAR(1)  NOT NULL,
+    ref_id       BIGINT   NOT NULL,
+    area_id      INTEGER  NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+    fecha        DATE     NOT NULL,
+    calificacion TEXT     NOT NULL,
+    puntaje      SMALLINT NOT NULL,
+    impacto      TEXT     NOT NULL,
+    resumen      TEXT,
+    cambios      TEXT,
+    comentario   TEXT,
+    lectura      TEXT,
+    modelo       TEXT,
+    creado_en    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (tipo, ref_id, area_id)
+);
+CREATE INDEX IF NOT EXISTS idx_area_rev_area_fecha ON area_revision (area_id, fecha);
+-- area_pedidos: un area y un mes pedidos desde la web («Revisar este mes»), con su avance
+CREATE TABLE IF NOT EXISTS area_pedidos (
+    id           SERIAL PRIMARY KEY,
+    area_id      INTEGER NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+    mes          TEXT    NOT NULL,                     -- AAAA-MM
+    estado       TEXT    NOT NULL DEFAULT 'pendiente', -- pendiente | en_curso | hecho
+    total        INTEGER,
+    hechos       INTEGER NOT NULL DEFAULT 0,
+    estimado_min INTEGER,
+    creado_por   TEXT,
+    creado_en    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    empezado_en  TIMESTAMPTZ,
+    hecho_en     TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_area_pedidos_abiertos ON area_pedidos (area_id, mes) WHERE estado <> 'hecho';

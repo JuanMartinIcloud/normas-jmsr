@@ -9,6 +9,11 @@
 """
 import os
 
+import neon_urls
+
+# Sistema normas-jmsr: las direcciones salen de la API de Neon (un solo secreto, NEON_API_KEY)
+neon_urls.completar_entorno()
+
 PRINCIPAL = 4
 RETIRADAS = (1,)
 CONTROL = int(os.getenv("TEXTOS_CONTROL", "2"))

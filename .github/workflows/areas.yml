@@ -1,0 +1,47 @@
+name: Monitoreo por areas (analisis con IA)
+run-name: Areas ${{ inputs.modo || 'diario' }}
+
+# Lo lanza el programador de tareas cada noche (modo diario) y la web cuando alguien pide «Revisar este mes»
+# (modo pedidos). Tambien se puede lanzar a mano.
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "diario | pedidos | historico | rango"
+        default: "diario"
+      fechas:
+        description: "Para 'rango': desde hasta (AAAA-MM-DD AAAA-MM-DD)"
+        default: ""
+
+# Un pedido de la web no espera a que termine la ejecucion de la noche: van en grupos distintos
+concurrency:
+  group: areas-${{ inputs.modo || 'diario' }}
+  cancel-in-progress: false
+
+jobs:
+  areas:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 330
+    env:
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GEMINI_MODELOS: ${{ vars.GEMINI_MODELOS }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: bash src/reintentar.sh pip install -r requirements.txt
+      - name: Analizar
+        run: |
+          set +e
+          MODO="${{ github.event.inputs.modo || 'diario' }}"
+          MAX=300
+          [ "$MODO" = "pedidos" ] && MAX=120
+          bash src/reintentar.sh python src/areas.py $MODO ${{ github.event.inputs.fechas }} --max-minutos $MAX > salida.log 2>&1; codigo=$?
+          cat salida.log
+          grep -E "^(20|Pedido|Mes|  la IA)" salida.log | tail -n 15 | while IFS= read -r l; do echo "::notice::${l:0:900}"; done
+          if [ $codigo -ne 0 ]; then tail -n 9 salida.log | while IFS= read -r l; do echo "::error::${l:0:900}"; done; fi
+          exit $codigo

@@ -44,6 +44,8 @@ _ETAPAS = [
                                      WHERE table_schema = 'public' AND table_name = 'control_calidad')"""),
     ("-- Etapa 15:", """SELECT EXISTS (SELECT 1 FROM information_schema.columns
                                      WHERE table_schema = 'public' AND table_name = 'proyectos_ley' AND column_name = 'rubro_ia')"""),
+    ("-- Etapa 16:", """SELECT EXISTS (SELECT 1 FROM information_schema.tables
+                                     WHERE table_schema = 'public' AND table_name = 'area_pedidos')"""),
 ]
 
 
