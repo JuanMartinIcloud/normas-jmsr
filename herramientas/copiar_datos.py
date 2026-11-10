@@ -43,9 +43,8 @@ def ocultar(uri):
 
 def bases_anteriores(clave):
     """[(nombre del proyecto, direccion)] de todas las bases de la cuenta anterior."""
-    orgs = neon_urls._pedir("/users/me/organizations", clave).get("organizations", [])
     salida = []
-    for org in (orgs or [None]):
+    for org in neon_urls.organizaciones(clave):
         params = {"limit": 100, **({"org_id": org["id"]} if org else {})}
         for q in neon_urls._pedir("/projects", clave, **params).get("projects", []):
             rama = next((b for b in neon_urls._pedir(f"/projects/{q['id']}/branches", clave)["branches"]

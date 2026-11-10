@@ -21,14 +21,27 @@ NUMEROS = {"normas-jmsr-principal": 4, "normas-jmsr-textos-1": 2, "normas-jmsr-t
 def _pedir(ruta, clave, **params):
     r = requests.get(API + ruta, headers={"Authorization": f"Bearer {clave}", "Accept": "application/json"},
                      params=params, timeout=60)
-    r.raise_for_status()
+    if r.status_code >= 400:
+        # El mensaje de Neon no contiene claves; se muestra para saber que fallo
+        raise requests.HTTPError(f"Neon respondio {r.status_code} en {ruta}: {r.text[:200]}", response=r)
     return r.json()
+
+
+def organizaciones(clave):
+    """Organizaciones visibles con la clave. Una clave de organizacion no puede consultar /users/me: en ese
+    caso se devuelve [None] y los proyectos se piden sin indicar organizacion (la clave ya la determina)."""
+    try:
+        return _pedir("/users/me/organizations", clave).get("organizations") or [None]
+    except requests.HTTPError as e:
+        if e.response is not None and e.response.status_code in (400, 401, 403, 404):
+            return [None]
+        raise
 
 
 def direcciones(clave):
     """{numero: direccion de conexion} de cada base del sistema."""
-    orgs = _pedir("/users/me/organizations", clave).get("organizations", [])
-    params = {"org_id": orgs[0]["id"]} if orgs else {}
+    org = organizaciones(clave)[0]
+    params = {"org_id": org["id"]} if org else {}
     salida = {}
     for p in _pedir("/projects", clave, **params).get("projects", []):
         n = NUMEROS.get(p["name"])
