@@ -13,12 +13,13 @@ El registro de las tareas es público: ninguna tarea imprime claves ni direccion
 | `GEMINI_API_KEY` | IA (Google AI Studio, plan gratuito) |
 | `VERCEL_TOKEN` | Para que «Configurar Vercel» copie las claves a la web |
 | `GITHUB_TAREAS` | Para que la web lance «Revisar este mes» al momento |
+| `ADMIN_CLAVE_INICIAL` | Contraseña del primer administrador (se puede borrar después) |
 
 ## Puesta en marcha
 
 1. Actions → «Copiar datos del sistema anterior» → modo `revisar` (muestra el plan) y luego `copiar`.
 2. Crear el proyecto `normas-jmsr` en Vercel (importando este repositorio) y lanzar «Configurar Vercel».
-3. Crear el primer usuario administrador.
+3. Guardar el secreto `ADMIN_CLAVE_INICIAL` (la contraseña) y lanzar «Crear administrador».
 4. Encender los horarios del programador (`programador.yml`) y de `cupos.yml`.
 
 ## Tareas de la noche (hora de Lima)

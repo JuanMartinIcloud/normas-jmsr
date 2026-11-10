@@ -1,0 +1,34 @@
+name: Crear administrador
+
+# Crea el primer usuario administrador de la web. La contraseña se toma del secreto ADMIN_CLAVE_INICIAL.
+on:
+  workflow_dispatch:
+    inputs:
+      usuario:
+        description: "Usuario para ingresar (letras, numeros, punto, guion o @)"
+        required: true
+      nombre:
+        description: "Nombre que se muestra"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  crear:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install psycopg2-binary requests
+      - name: Crear
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          ADMIN_CLAVE_INICIAL: ${{ secrets.ADMIN_CLAVE_INICIAL }}
+          USUARIO: ${{ inputs.usuario }}
+          NOMBRE: ${{ inputs.nombre }}
+        run: python herramientas/crear_administrador.py
