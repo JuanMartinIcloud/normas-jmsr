@@ -213,6 +213,13 @@ def main():
     for t in TABLAS_PRINCIPAL:
         copiar_tabla(o, d, t)
     o.close()
+    from areas_base import AREAS_BASE   # lista inicial de areas (asi la web ya las muestra)
+    from psycopg2.extras import execute_values
+    with d.cursor() as cur:
+        execute_values(cur, "INSERT INTO areas (nombre, descripcion, origen) VALUES %s ON CONFLICT (nombre) DO NOTHING",
+                       [(n, x, "base") for n, x in AREAS_BASE])
+        p(f"  areas iniciales: {cur.rowcount} nuevas")
+    d.commit()
     d.close()
     for nombre, uri, n, control in plan:
         p(f"\nTexto: {nombre} -> {inv[n]}")
