@@ -1,0 +1,28 @@
+name: Configurar Vercel
+
+# Copia a Vercel las claves de la web (direcciones de las bases, Gemini, tareas) y la vuelve a publicar.
+# Se lanza a mano (Actions -> Configurar Vercel -> Run workflow) cada vez que cambie una clave.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  configurar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Copiar claves a Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODELOS: ${{ secrets.GEMINI_MODELOS }}
+          GITHUB_TAREAS: ${{ secrets.GITHUB_TAREAS }}
+        run: python herramientas/configurar_vercel.py

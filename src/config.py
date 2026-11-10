@@ -17,7 +17,7 @@ REINTENTOS = int(os.getenv("REINTENTOS", "4"))
 TIMEOUT = int(os.getenv("TIMEOUT", "60"))
 
 USER_AGENT = os.getenv(
-    "USER_AGENT", "Mozilla/5.0 (compatible; normas-peru-research/0.1; uso academico)"
+    "USER_AGENT", "Mozilla/5.0 (compatible; normas-jmsr-research/0.1; uso academico)"
 )
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")  # cadena de conexion de la base principal (Neon)

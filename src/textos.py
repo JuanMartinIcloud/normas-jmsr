@@ -14,7 +14,7 @@ from pypdf import PdfReader
 
 logging.getLogger("pypdf").setLevel(logging.ERROR)   # avisos menores de PDFs mal formados
 
-AGENTE = "Mozilla/5.0 (compatible; normas-peru/0.2; consulta de documentos publicos)"
+AGENTE = "Mozilla/5.0 (compatible; normas-jmsr/0.2; consulta de documentos publicos)"
 API_CONGRESO = "https://api.congreso.gob.pe/spley-portal-service"
 CLAVE_PORTAL = b"ProdALg5ZrAsxBMD"   # clave publica que usa el propio portal del Congreso en el navegador
 CABECERAS_CONGRESO = {

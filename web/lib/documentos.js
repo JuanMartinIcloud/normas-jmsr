@@ -3,7 +3,7 @@ import { Aviso } from "./errores";
 
 // Obtiene el PDF oficial de una norma (El Peruano) y el de un proyecto de ley (Congreso)
 
-const AGENTE = "Mozilla/5.0 (compatible; normas-peru/0.2; consulta de documentos publicos)";
+const AGENTE = "Mozilla/5.0 (compatible; normas-jmsr/0.2; consulta de documentos publicos)";
 const API_CONGRESO = "https://api.congreso.gob.pe/spley-portal-service";
 // Clave publica que el propio portal del Congreso usa en el navegador para pedir un expediente
 const CLAVE_PORTAL = Buffer.from("ProdALg5ZrAsxBMD", "utf8");

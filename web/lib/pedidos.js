@@ -7,7 +7,7 @@ import { renovar } from "./bases";
 // permiso solo para lanzar tareas de este repositorio), la tarea se lanza al momento; si no, la atiende la
 // ejecucion de la madrugada.
 
-const REPO = "JuanMartinIcloud/normas-peru";
+const REPO = "JuanMartinIcloud/normas-jmsr";
 let tablaLista = false;
 
 async function asegurarTabla() {

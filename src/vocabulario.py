@@ -9,6 +9,10 @@ import os
 
 import psycopg2
 
+import neon_urls
+
+neon_urls.completar_entorno()
+
 import cupos
 
 SIN_TILDE = "translate(word, 'áéíóúüàèìòù', 'aeiouuaeiou')"

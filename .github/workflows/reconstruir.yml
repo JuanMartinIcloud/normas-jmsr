@@ -20,11 +20,12 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Crear tablas
         env:
-          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
-          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: |
           python - <<'PY'
-          import os, psycopg2
+          import os, sys, psycopg2
+          sys.path.insert(0, "src")
+          import neon_urls; neon_urls.completar_entorno()
           conn = psycopg2.connect(os.environ["DATABASE_URL"])
           with conn, conn.cursor() as cur:
               cur.execute(open("schema.sql", encoding="utf-8").read())
@@ -54,8 +55,7 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Normas desde ${{ matrix.tramo.desde }}
         env:
-          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
-          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: >
           python src/backfill.py --desde "${{ matrix.tramo.desde }}"
           ${{ matrix.tramo.hasta && format('--hasta {0}', matrix.tramo.hasta) || '' }}
@@ -74,8 +74,7 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Proyectos de ley del Congreso
         env:
-          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
-          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: python src/run_congreso.py
 
   resumenes:
@@ -92,8 +91,7 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Resumenes de la ultima semana
         env:
-          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODELOS: ${{ vars.GEMINI_MODELOS }}
-          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
         run: python src/resumen.py --sin-descarga

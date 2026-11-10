@@ -19,16 +19,13 @@ jobs:
       - run: bash src/reintentar.sh pip install -r requirements.txt
       - name: Descargar proyectos de ley
         env:
-          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
-          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: bash src/reintentar.sh python src/run_congreso.py
       - name: Seguimiento de expedientes (dictamenes, autografas, remisiones)
         env:
-          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
-          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: bash src/reintentar.sh python src/seguimiento.py --max-minutos 40
       - name: Proposiciones convertidas en ley (numero de ley, fe de erratas y enlace entre camaras)
         env:
-          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
-          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: bash src/reintentar.sh python src/leyes.py --max-minutos 20

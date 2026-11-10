@@ -3,8 +3,6 @@ import { notFound } from "next/navigation";
 import { consultar } from "../../../../../lib/db";
 import { asegurarTablas, FRECUENCIAS, urlBuscador } from "../../../../../lib/busquedas";
 import AccionesBusqueda from "../AccionesBusqueda";
-import BotonImpacto from "../BotonImpacto";
-import { estadoImpacto } from "../../../../../lib/pedidos";
 
 export const metadata = { title: "Resultados · Búsquedas guardadas" };
 
@@ -21,14 +19,6 @@ export default async function Resultados({ params: parametrosRuta }) {
      FROM busqueda_ejecuciones WHERE busqueda_id = $1 ORDER BY hasta DESC, creado_en DESC LIMIT 60`,
     [id]
   );
-  // Estado de cada documento en el filtro empresarial (las ejecuciones antiguas no guardaban el documento)
-  const ids = (tipo) => ejecuciones.flatMap((e) => (tipo === "N" ? e.normas : e.proyectos) || []).map((x) => x.id).filter(Boolean);
-  let estados = {};
-  try {
-    estados = await estadoImpacto(ids("N"), ids("P"));
-  } catch (err) {
-    console.error(err);
-  }
   return (
     <>
       <p className="ia-pendiente"><a href="/monitoreo/busquedas">← Búsquedas guardadas</a></p>
@@ -58,7 +48,7 @@ export default async function Resultados({ params: parametrosRuta }) {
             </>
           )}
           {e.resumen?.error && <p className="ia-aviso">No se pudo generar el resumen: {e.resumen.error}</p>}
-          <DosResultados e={e} estados={estados} />
+          <ListaEjecucion e={e} />
           <p><a href={urlBuscador(b, e.desde, e.hasta)}>Ver todos los resultados de este periodo en el buscador →</a></p>
         </details>
       ))}
@@ -66,31 +56,17 @@ export default async function Resultados({ params: parametrosRuta }) {
   );
 }
 
-// Dos resultados: lo que tiene impacto empresarial y todo lo encontrado (sin filtro), con el boton para
-// pasar un documento de un lado al otro
-function DosResultados({ e, estados }) {
+// Resultados de una ejecucion: normas y proyectos encontrados
+function ListaEjecucion({ e }) {
   const normas = (e.normas || []).map((n) => ({ ...n, tipo: "N", texto: n.sumilla, detalle: n.fecha }));
   const proyectos = (e.proyectos || []).map((p) => ({ ...p, tipo: "P", texto: p.titulo, detalle: `${p.fecha}, ${p.estado}` }));
-  const conId = [...normas, ...proyectos].some((x) => x.id);
-  const estadoDe = (x) => (x.id ? estados[`${x.tipo}${x.id}`] || "sin_revisar" : null);
-  const empresarial = [...normas, ...proyectos].filter((x) => estadoDe(x) === "impacto");
   const item = (x, k) => (
     <li key={`${x.tipo}${x.id || k}`}>
       {x.url ? <a href={x.url} target="_blank" rel="noopener noreferrer">{x.nombre}</a> : x.nombre} ({x.detalle}) — {x.texto}
-      {x.id && <> <BotonImpacto tipo={x.tipo} id={String(x.id)} estado={estadoDe(x)} /></>}
     </li>
   );
   return (
     <>
-      {conId ? (
-        <>
-          <h4>Con impacto empresarial ({empresarial.length})</h4>
-          {empresarial.length ? <ul>{empresarial.map(item)}</ul> : <p className="vacio">Ninguno por ahora.</p>}
-        </>
-      ) : (
-        <p className="ia-pendiente">Este resultado es anterior a la separación por impacto empresarial: pulsa «Ejecutar ahora» para verlo separado.</p>
-      )}
-      <h4>Todos los resultados, sin filtro</h4>
       <h4>Normas legales ({e.total_normas}{e.total_normas > normas.length ? `, se muestran las ${normas.length} más relevantes` : ""})</h4>
       <ul>{normas.map(item)}</ul>
       <h4>Proyectos de ley ({e.total_proyectos}{e.total_proyectos > proyectos.length ? `, se muestran los ${proyectos.length} más relevantes` : ""})</h4>

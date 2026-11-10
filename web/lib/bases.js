@@ -2,7 +2,7 @@ import { neon } from "@neondatabase/serverless";
 import { unstable_cache, revalidateTag } from "next/cache";
 
 // Bases de datos del sistema (todas en Neon, plan gratuito; ver src/bases.py):
-// - Principal: TEXTOS_URL_4 (normas, proyectos, analisis, usuarios).
+// - Principal: TEXTOS_URL_4 (normas, proyectos, areas, usuarios). Vercel las recibe con la tarea «Configurar Vercel».
 // - De texto: TEXTOS_URL_2, 3, 5 a 12 (texto completo de normas y proyectos, tabla "documentos").
 //   La 1 se retiro: su contenido se copio a la 12.
 

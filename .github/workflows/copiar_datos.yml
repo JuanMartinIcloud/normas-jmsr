@@ -1,0 +1,41 @@
+name: Copiar datos del sistema anterior
+
+# Copia normas, proyectos, resumenes y textos del sistema anterior a las bases nuevas (no copia usuarios
+# ni nada de AmCham). Primero «revisar» (solo muestra que hay y el plan); despues «copiar».
+on:
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "revisar (no copia nada) o copiar"
+        type: choice
+        options: [revisar, copiar]
+        default: revisar
+      excluir:
+        description: "Proyectos anteriores que no se copian (separados por comas), si el plan lo pide"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: copiar-datos
+  cancel-in-progress: false
+
+jobs:
+  copiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Copiar
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_API_KEY_ANTERIOR: ${{ secrets.NEON_API_KEY_ANTERIOR }}
+          MODO: ${{ inputs.modo }}
+          EXCLUIR: ${{ inputs.excluir }}
+        run: python herramientas/copiar_datos.py --modo "$MODO" --excluir "$EXCLUIR"

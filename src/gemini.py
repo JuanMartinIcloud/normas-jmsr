@@ -18,6 +18,10 @@ import time
 
 import requests
 
+import neon_urls
+
+neon_urls.completar_entorno()   # direcciones de las bases a partir de NEON_API_KEY
+
 API = "https://generativelanguage.googleapis.com/v1beta/models"
 FLASH = ["gemini-flash-latest", "gemini-3.8-flash", "gemini-3.6-flash", "gemini-3-flash-preview",
          "gemini-3.7-flash", "gemini-3.5-flash"]

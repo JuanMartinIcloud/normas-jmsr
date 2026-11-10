@@ -24,6 +24,9 @@ export default async function Areas() {
         <a className="atajo" href="/proyectos">Proyectos de ley</a>
         <a className="atajo" href="/resumenes">Resúmenes diarios</a>
         <a className="atajo activo" href="/areas">Monitoreo por áreas</a>
+        <a className="atajo" href="/monitoreo/busquedas">Búsquedas guardadas</a>
+        <a className="atajo" href="/monitoreo/control">Control de calidad</a>
+        <a className="atajo" href="/monitoreo/usuarios">Usuarios</a>
       </nav>
       <h1>Monitoreo por áreas</h1>
       <p className="sub">

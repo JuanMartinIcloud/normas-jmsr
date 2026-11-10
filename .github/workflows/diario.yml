@@ -24,6 +24,5 @@ jobs:
       - run: bash src/reintentar.sh pip install -r requirements.txt
       - name: Descargar normas
         env:
-          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
-          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: bash src/reintentar.sh python src/run_dia.py ${{ github.event.inputs.fecha }}

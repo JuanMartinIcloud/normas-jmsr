@@ -30,8 +30,7 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Descargar tanda
         env:
-          DATABASE_URL: ${{ secrets.TEXTOS_URL_4 }}
-          TEXTOS_URL_2: ${{ secrets.TEXTOS_URL_2 }}
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: >
           python src/backfill.py
           --desde "${{ github.event.inputs.desde || '2015-01-01' }}"

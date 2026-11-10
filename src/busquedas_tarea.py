@@ -1,5 +1,6 @@
 """Ejecuta en la web las busquedas guardadas que tocan hoy (lo lanza el programador una vez al dia)."""
 import os, time, psycopg2, requests
+import neon_urls; neon_urls.completar_entorno()
 import cupos
 if cupos.principal_en_emergencia():
     raise SystemExit(0)
@@ -9,7 +10,7 @@ fila = cur.fetchone(); c.close()
 if not fila:
     print("::notice::Todavia no hay busquedas guardadas."); raise SystemExit(0)
 for vuelta in range(8):
-    r = requests.post("https://normas-peru.vercel.app/api/busquedas/ejecutar", headers={"x-clave-tareas": fila[0]}, timeout=320)
+    r = requests.post(os.getenv("SITIO_WEB", "https://normas-jmsr.vercel.app").rstrip("/") + "/api/busquedas/ejecutar", headers={"x-clave-tareas": fila[0]}, timeout=320)
     try:
         d = r.json()
     except ValueError:

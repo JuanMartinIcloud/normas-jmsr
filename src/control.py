@@ -155,31 +155,32 @@ def main():
         c.rollback()
         anotar("FALLA", "Leyes sin enlace a su publicacion en El Peruano", f"no se pudo comprobar ({type(e).__name__}: {str(e)[:120]})")
 
-    # Monitoreo
+    # Monitoreo por areas: cada documento del mes en curso (hasta ayer) revisado para todas las areas activas
     try:
-        (vacios,) = uno("""SELECT count(*) FROM analisis WHERE relevante AND NOT excluido AND
-                           (coalesce(resumen, '') = '' OR coalesce(cardinality(comites), 0) = 0 OR calificacion IS NULL OR puntaje IS NULL)""")
-        anotar("FALLA" if vacios else "OK", "Analisis del reporte completos", f"{vacios} incompletos" if vacios else "todos completos")
+        (n_areas,) = uno("SELECT count(*) FROM areas WHERE activa")
+        (vacios,) = uno("""SELECT count(*) FROM area_revision
+                           WHERE coalesce(comentario, '') = '' OR calificacion IS NULL OR puntaje IS NULL""")
+        anotar("FALLA" if vacios else "OK", "Analisis por area completos", f"{vacios} incompletos" if vacios else "todos completos")
         inicio_mes = hoy.replace(day=1)
-        (faltan_n,) = uno("""SELECT count(*) FROM normas n WHERE n.fecha BETWEEN %s AND %s
-                             AND NOT EXISTS (SELECT 1 FROM analisis a WHERE a.tipo = 'N' AND a.ref_id = n.id)""", (inicio_mes, ayer))
-        (faltan_p,) = uno("""SELECT count(*) FROM proyectos_ley p WHERE p.fecha_presentacion BETWEEN %s AND %s
-                             AND NOT EXISTS (SELECT 1 FROM analisis a WHERE a.tipo = 'P' AND a.ref_id = p.id)""", (inicio_mes, ayer))
-        if faltan_n:
-            cur.execute("""SELECT n.id, n.fecha, n.tipo, n.entidad, to_char(n.creado_en AT TIME ZONE 'America/Lima', 'DD/MM HH24:MI')
-                           FROM normas n WHERE n.fecha BETWEEN %s AND %s
-                           AND NOT EXISTS (SELECT 1 FROM analisis a WHERE a.tipo = 'N' AND a.ref_id = n.id) LIMIT 10""", (inicio_mes, ayer))
-            print("  normas sin revisar (id, fecha, tipo, entidad, guardada el):", cur.fetchall())
+        falta = """NOT EXISTS (SELECT 1 FROM area_cobertura c WHERE c.tipo = %s AND c.ref_id = x.id
+                               AND c.areas @> (SELECT coalesce(array_agg(id), '{}') FROM areas WHERE activa))"""
+        (faltan_n,) = uno(f"SELECT count(*) FROM normas x WHERE x.fecha BETWEEN %s AND %s AND {falta}", (inicio_mes, ayer, "N"))
+        (faltan_p,) = uno(f"SELECT count(*) FROM proyectos_ley x WHERE x.fecha_presentacion BETWEEN %s AND %s AND {falta}",
+                          (inicio_mes, ayer, "P"))
         if inicio_mes <= ayer:
-            anotar("FALLA" if faltan_n or faltan_p else "OK", "Monitoreo del mes en curso",
+            anotar("FALLA" if faltan_n or faltan_p else "OK", f"Monitoreo del mes en curso ({n_areas} areas)",
                    f"sin revisar hasta ayer: {faltan_n} normas y {faltan_p} proyectos" if faltan_n or faltan_p else "revisado hasta ayer")
+        (pendientes,) = uno("SELECT count(*) FROM area_pedidos WHERE estado <> 'hecho' AND creado_en < now() - interval '3 hours'")
+        anotar("FALLA" if pendientes else "OK", "Pedidos «Revisar este mes»",
+               f"{pendientes} sin terminar despues de 3 horas" if pendientes else "ninguno atrasado")
         (meses_ok, meses_total) = uno("""SELECT count(*) FILTER (WHERE r = t), count(*) FROM (
-                                        SELECT to_char(n.fecha, 'YYYY-MM') m, count(*) t, count(a.id) r FROM normas n
-                                        LEFT JOIN analisis a ON a.tipo = 'N' AND a.ref_id = n.id GROUP BY 1) x""")
-        anotar("INFO", "Monitoreo de meses anteriores", f"{meses_ok} de {meses_total} meses revisados por completo")
+                                        SELECT to_char(n.fecha, 'YYYY-MM') m, count(*) t,
+                                               count(*) FILTER (WHERE c.areas @> (SELECT coalesce(array_agg(id), '{}') FROM areas WHERE activa)) r
+                                        FROM normas n LEFT JOIN area_cobertura c ON c.tipo = 'N' AND c.ref_id = n.id GROUP BY 1) x""")
+        anotar("INFO", "Monitoreo de meses anteriores", f"{meses_ok} de {meses_total} meses revisados por completo en todas las areas")
     except Exception as e:  # noqa: BLE001  (una comprobacion que falla no detiene las demas)
         c.rollback()
-        anotar("FALLA", "Monitoreo", f"no se pudo comprobar ({type(e).__name__}: {str(e)[:120]})")
+        anotar("FALLA", "Monitoreo por areas", f"no se pudo comprobar ({type(e).__name__}: {str(e)[:120]})")
 
     # Resumen diario de ayer
     try:

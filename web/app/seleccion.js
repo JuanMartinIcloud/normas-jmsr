@@ -1,7 +1,7 @@
 "use client";
 
 // Lista de documentos marcados por el usuario (se guarda en este navegador)
-const CLAVE = "normas-peru-seleccion";
+const CLAVE = "normas-jmsr-seleccion";
 const EVENTO = "seleccion-cambio";
 export const MAXIMO = 6;
 

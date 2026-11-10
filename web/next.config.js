@@ -11,6 +11,8 @@ const SEGURIDAD = [
 
 module.exports = {
   poweredByHeader: false,
+  // El navegador recibe solo el codigo ya compactado, sin los mapas que permitirian ver el codigo original
+  productionBrowserSourceMaps: false,
   // El sitio no usa el optimizador de imagenes de Next: se desactiva (asi su direccion no queda expuesta)
   images: { unoptimized: true },
   async headers() {

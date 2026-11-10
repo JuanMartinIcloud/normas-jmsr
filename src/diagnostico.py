@@ -130,7 +130,7 @@ def seguridad():
 
 def web():
     """Pruebas desde afuera, sin usuario: nada debe mostrar datos."""
-    sitio = "https://normas-peru.vercel.app"
+    sitio = os.getenv("SITIO_WEB", "https://normas-jmsr.vercel.app").rstrip("/")
     nav = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120 Safari/537.36"}
     falsa = {"Cookie": "sesion=1.99999999999999." + "a" * 64, **nav}
     pruebas = [

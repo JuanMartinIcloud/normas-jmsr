@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const CLAVE_MODO = "normas-peru-buscar-con-ia";
+const CLAVE_MODO = "normas-jmsr-buscar-con-ia";
 
 // Formulario principal de "Buscar en todo". Con "Buscar con IA" (activado por defecto) la IA
 // interpreta lo escrito en lenguaje natural y lo convierte en una busqueda de expresiones clave.

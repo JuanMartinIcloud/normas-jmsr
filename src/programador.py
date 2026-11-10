@@ -14,16 +14,15 @@ Tareas (hora de Lima):
   22:40  Descarga diaria de normas (diario.yml)
   23:30  Dias pendientes del historico de El Peruano (historico.yml)
   01:20  Proyectos de ley, seguimiento y leyes publicadas (congreso.yml)
-  02:20  Monitoreo: mes en curso, pedidos y un mes anterior (monitoreo.yml), despues del Congreso
   03:20  Resumen diario con IA (resumen.yml), despues de la descarga de normas
+  03:40  Monitoreo por areas: pedidos, mes en curso y meses anteriores (areas.yml), despues del resumen y del Congreso
   04:00  Texto completo de lo nuevo (indexar.yml), despues del resumen
-  05:00  Busquedas guardadas (busquedas.yml), despues del monitoreo
+  05:00  Busquedas guardadas (busquedas.yml), despues del resumen
   05:30  Lectura de escaneados (ocr.yml), despues del texto completo
   06:00  Alarma de consumo (vigilar.yml)
   06:10  (lunes) Vocabulario del corrector de busquedas (vocabulario.yml)
-  06:20  Rubro con IA de las normas sin rubro, hasta 300 consultas (clasificar.yml), despues del monitoreo
+  06:20  Rubro con IA de las normas sin rubro, hasta 300 consultas (clasificar.yml), despues del resumen
   07:00  Control de calidad del dia (control.yml), despues de todo lo anterior
-  15:00  Recalificacion pendiente del monitoreo (recalificar.yml)
 """
 import os
 import sys
@@ -47,17 +46,16 @@ TAREAS = [
     ("resumen.yml", 3, 20, {}, "diario.yml", None),
     # Despues del resumen: este vuelve a bajar El Peruano y recoge las ediciones extraordinarias tardias,
     # que asi tambien se analizan esa noche. Ademas, a esa hora ya se renovo el cupo diario de la IA.
-    ("monitoreo.yml", 3, 40, {"modo": "diario"}, ("resumen.yml", "congreso.yml"), None),
+    ("areas.yml", 3, 40, {"modo": "diario"}, ("resumen.yml", "congreso.yml"), None),
     ("indexar.yml", 4, 0, {}, "resumen.yml", None),
-    ("busquedas.yml", 5, 0, {}, "monitoreo.yml", None),
+    ("busquedas.yml", 5, 0, {}, "resumen.yml", None),
     ("cupos.yml", 5, 0, {}, None, None),
     ("ocr.yml", 5, 30, {}, "indexar.yml", None),
     ("vigilar.yml", 6, 0, {}, None, None),
     ("vocabulario.yml", 6, 10, {}, None, 0),
-    ("clasificar.yml", 6, 20, {}, "monitoreo.yml", None),
+    ("clasificar.yml", 6, 20, {}, "resumen.yml", None),
     ("control.yml", 7, 0, {}, "clasificar.yml", None),
     ("cupos.yml", 15, 0, {}, None, None),
-    ("recalificar.yml", 15, 0, {}, None, None),
 ]
 HORA = {a: (h, m) for a, h, m, *_ in reversed(TAREAS)}   # primera hora del dia de cada flujo (para dependencias)
 # Horas en que se revisa (hora de Lima): (desde, hasta) en minutos del dia

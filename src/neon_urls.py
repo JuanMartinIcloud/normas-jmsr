@@ -8,6 +8,7 @@ Correspondencia (los mismos numeros que usa el resto del codigo, ver bases.py):
   normas-jmsr-textos-1..7 -> TEXTOS_URL_2, 3, 5, 6, 7, 8, 9  (la textos-1 es ademas la base de control)
 """
 import os
+import re
 
 import requests
 
@@ -50,6 +51,12 @@ def completar_entorno():
         return
     try:
         for n, uri in direcciones(clave).items():
+            if os.getenv("GITHUB_ACTIONS"):
+                # El registro de las tareas es publico: GitHub tapa estas direcciones si llegaran a aparecer
+                print(f"::add-mask::{uri}")
+                clave_bd = re.search(r"://[^:/]+:([^@]+)@", uri)
+                if clave_bd:
+                    print(f"::add-mask::{clave_bd.group(1)}")
             os.environ.setdefault(f"TEXTOS_URL_{n}", uri)
         if os.getenv("TEXTOS_URL_4"):
             os.environ.setdefault("DATABASE_URL", os.environ["TEXTOS_URL_4"])
