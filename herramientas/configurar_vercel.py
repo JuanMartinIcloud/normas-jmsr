@@ -2,7 +2,8 @@
 
 Asi las claves se escriben una sola vez (en los secretos de GitHub) y nadie tiene que copiarlas a mano:
 - TEXTOS_URL_n de cada base: se leen de la API de Neon (secreto NEON_API_KEY).
-- GEMINI_API_KEY, GEMINI_MODELOS y GITHUB_TAREAS: de los secretos de GitHub, si estan definidos.
+- GEMINI_API_KEY y GEMINI_MODELOS: de los secretos de GitHub. GITHUB_TAREAS: del secreto TAREAS_TOKEN
+  (GitHub no permite secretos cuyo nombre empiece con GITHUB_).
 Necesita el secreto VERCEL_TOKEN (una clave de Vercel). Nunca imprime ninguna clave.
 """
 import os

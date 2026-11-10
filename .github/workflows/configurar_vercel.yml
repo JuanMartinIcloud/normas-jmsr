@@ -24,5 +24,5 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODELOS: ${{ secrets.GEMINI_MODELOS }}
-          GITHUB_TAREAS: ${{ secrets.GITHUB_TAREAS }}
+          GITHUB_TAREAS: ${{ secrets.TAREAS_TOKEN }}
         run: python herramientas/configurar_vercel.py

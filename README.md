@@ -12,7 +12,7 @@ El registro de las tareas es público: ninguna tarea imprime claves ni direccion
 | `NEON_API_KEY_ANTERIOR` | Solo para copiar los datos del sistema anterior (se puede borrar después) |
 | `GEMINI_API_KEY` | IA (Google AI Studio, plan gratuito) |
 | `VERCEL_TOKEN` | Para que «Configurar Vercel» copie las claves a la web |
-| `GITHUB_TAREAS` | Para que la web lance «Revisar este mes» al momento |
+| `TAREAS_TOKEN` | (en Vercel se llama GITHUB_TAREAS) Para que la web lance «Revisar este mes» al momento |
 | `ADMIN_CLAVE_INICIAL` | Contraseña del primer administrador (se puede borrar después) |
 
 ## Puesta en marcha
