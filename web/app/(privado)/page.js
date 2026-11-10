@@ -166,6 +166,7 @@ export default async function Pagina({ searchParams: parametros }) {
         <a className="atajo" href="/buscar">Buscar en todo</a>
         <a className="atajo" href="/proyectos">Proyectos de ley →</a>
         <a className="atajo" href="/areas">Monitoreo por áreas →</a>
+        <a className="atajo" href="/excel">Descargar en Excel</a>
       </nav>
 
       {!hayFiltros && f.pagina === 1 && (

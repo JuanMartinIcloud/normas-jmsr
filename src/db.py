@@ -46,6 +46,8 @@ _ETAPAS = [
                                      WHERE table_schema = 'public' AND table_name = 'proyectos_ley' AND column_name = 'rubro_ia')"""),
     ("-- Etapa 16:", """SELECT EXISTS (SELECT 1 FROM information_schema.tables
                                      WHERE table_schema = 'public' AND table_name = 'area_pedidos')"""),
+    ("-- Etapa 17:", """SELECT EXISTS (SELECT 1 FROM information_schema.tables
+                                     WHERE table_schema = 'public' AND table_name = 'excel_descargas')"""),
 ]
 
 

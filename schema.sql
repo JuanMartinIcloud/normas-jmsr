@@ -310,3 +310,54 @@ CREATE TABLE IF NOT EXISTS area_pedidos (
     hecho_en     TIMESTAMPTZ
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_area_pedidos_abiertos ON area_pedidos (area_id, mes) WHERE estado <> 'hecho';
+
+-- ---------------------------------------------------------------------------
+-- Etapa 17: descarga en Excel (normas, proyectos y seguimientos) con «solo los cambios».
+-- modificado_en cambia solo cuando cambia algun dato del documento (no cuando la tarea lo vuelve a
+-- guardar igual), asi la descarga de cambios trae solo lo nuevo y lo que de verdad cambio.
+-- ---------------------------------------------------------------------------
+ALTER TABLE normas ADD COLUMN IF NOT EXISTS modificado_en TIMESTAMPTZ;
+UPDATE normas SET modificado_en = creado_en WHERE modificado_en IS NULL;
+ALTER TABLE normas ALTER COLUMN modificado_en SET DEFAULT now();
+ALTER TABLE normas ALTER COLUMN modificado_en SET NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_normas_modificado ON normas (modificado_en);
+
+ALTER TABLE proyectos_ley ADD COLUMN IF NOT EXISTS modificado_en TIMESTAMPTZ;
+UPDATE proyectos_ley SET modificado_en = creado_en WHERE modificado_en IS NULL;
+ALTER TABLE proyectos_ley ALTER COLUMN modificado_en SET DEFAULT now();
+ALTER TABLE proyectos_ley ALTER COLUMN modificado_en SET NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_proy_modificado ON proyectos_ley (modificado_en);
+
+CREATE INDEX IF NOT EXISTS idx_seg_creado ON seguimientos (creado_en);
+
+-- Columnas de control interno que no cuentan como «cambio» del documento
+CREATE OR REPLACE FUNCTION marcar_modificado() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    IF (to_jsonb(NEW) - TG_ARGV) IS DISTINCT FROM (to_jsonb(OLD) - TG_ARGV) THEN
+        NEW.modificado_en := now();
+    ELSE
+        NEW.modificado_en := OLD.modificado_en;
+    END IF;
+    RETURN NEW;
+END $$;
+
+DROP TRIGGER IF EXISTS normas_modificado ON normas;
+CREATE TRIGGER normas_modificado BEFORE UPDATE ON normas FOR EACH ROW
+    EXECUTE FUNCTION marcar_modificado('modificado_en', 'rubro_ia');
+DROP TRIGGER IF EXISTS proyectos_modificado ON proyectos_ley;
+CREATE TRIGGER proyectos_modificado BEFORE UPDATE ON proyectos_ley FOR EACH ROW
+    EXECUTE FUNCTION marcar_modificado('modificado_en', 'actualizado', 'seguimiento_revisado', 'sumilla_revisada', 'rubro_ia');
+
+-- Cada descarga de Excel de cada usuario: la siguiente «solo cambios» empieza donde termino la anterior
+CREATE TABLE IF NOT EXISTS excel_descargas (
+    id          BIGSERIAL PRIMARY KEY,
+    usuario_id  INTEGER     NOT NULL,
+    completa    BOOLEAN     NOT NULL,
+    desde       TIMESTAMPTZ,
+    hasta       TIMESTAMPTZ NOT NULL,
+    normas      INTEGER     NOT NULL DEFAULT 0,
+    proyectos   INTEGER     NOT NULL DEFAULT 0,
+    seguimientos INTEGER    NOT NULL DEFAULT 0,
+    creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_excel_usuario ON excel_descargas (usuario_id, hasta DESC);
