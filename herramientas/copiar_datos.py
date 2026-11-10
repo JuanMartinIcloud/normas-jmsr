@@ -158,6 +158,8 @@ def main():
     a = ap.parse_args()
     excluir = {x.strip() for x in a.excluir.split(",") if x.strip()}
 
+    if not os.getenv("NEON_API_KEY_ANTERIOR", "").strip():
+        raise SystemExit("::error::Falta el secreto NEON_API_KEY_ANTERIOR en este repositorio (normas-jmsr).")
     anteriores = bases_anteriores(os.environ["NEON_API_KEY_ANTERIOR"].strip())
     p(f"Bases del sistema anterior: {len(anteriores)}")
     principal, textos = None, []
