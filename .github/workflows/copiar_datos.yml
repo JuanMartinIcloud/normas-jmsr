@@ -35,7 +35,7 @@ jobs:
       - name: Copiar
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
-          NEON_API_KEY_ANTERIOR: ${{ secrets.NEON_API_KEY_ANTERIOR }}
+          NEON_API_KEY_ANTERIOR: ${{ secrets.NEON_API_KEY_ANTERIOR || secrets.NEON_APY_KEY_ANTERIOR }}
           MODO: ${{ inputs.modo }}
           EXCLUIR: ${{ inputs.excluir }}
         run: python herramientas/copiar_datos.py --modo "$MODO" --excluir "$EXCLUIR"
