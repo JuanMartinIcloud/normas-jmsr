@@ -519,7 +519,7 @@ _COLS_P = """p.id, coalesce(p.fecha_presentacion, p.ley_fecha), p.numero, p.cama
 def segunda_opinion(reloj):
     """Los Flash vuelven a analizar, para TODAS las areas, los documentos que la primera revision (Lite)
     califico con 5 o mas en alguna area. Orden: mes en curso, meses con pedidos «Revisar este mes» y luego
-    del mes mas reciente al mas antiguo; dentro de cada mes, del puntaje mas alto al mas bajo. Su analisis
+    todo el historial del puntaje mas alto al mas bajo (10, 9, 8...), a igual puntaje del mas reciente. Su analisis
     reemplaza al de Lite (tambien puede agregar areas que Lite no vio o quitar las que no corresponden).
     Cuando los Flash llegan a su limite del dia, sigue la noche siguiente donde quedo (area_cobertura.segunda_en)."""
     global MODELOS
@@ -542,7 +542,7 @@ def segunda_opinion(reloj):
             HAVING max(r.puntaje) >= %s
             ORDER BY date_trunc('month', max(r.fecha)) = %s DESC,
                      to_char(max(r.fecha), 'YYYY-MM') IN (SELECT mes FROM area_pedidos) DESC,
-                     date_trunc('month', max(r.fecha)) DESC, max(r.puntaje) DESC, max(r.fecha) DESC
+                     max(r.puntaje) DESC, max(r.fecha) DESC
             LIMIT 20""", (PUNTAJE_SEGUNDA, mes_actual))
         if not lote:
             break
