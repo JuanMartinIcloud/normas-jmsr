@@ -13,20 +13,20 @@ const HOJAS = {
     nombre: "Normas legales",
     columnas: [
       ["Cambio", 12], ["Fecha", 12], ["Tipo", 26], ["Número", 24], ["Entidad", 34], ["Sector", 22], ["Rubro", 22],
-      ["Sumilla", 90], ["Extraordinaria", 14], ["Enlace", 50], ["PDF", 50],
+      ["Sumilla", 90], ["Extraordinaria", 14], ["Enlace", 12], ["PDF", 10],
     ],
     sql: (filtro) => `SELECT id, (creado_en > $1::timestamptz) AS nuevo, to_char(fecha, 'YYYY-MM-DD') AS fecha, tipo, numero,
                              entidad, sector, rubro, sumilla, extraordinaria, url_detalle, url_pdf
                       FROM normas WHERE id > $3 AND ${filtro} ORDER BY id LIMIT ${LOTE}`,
     fila: (r) => [r.nuevo ? "Nuevo" : "Modificado", r.fecha, r.tipo, r.numero, r.entidad, r.sector, r.rubro, r.sumilla,
-      r.extraordinaria ? "Sí" : "No", enlace(r.url_detalle), enlace(r.url_pdf)],
+      r.extraordinaria ? "Sí" : "No", enlace(r.url_detalle, "Ver norma"), enlace(r.url_pdf, "PDF")],
   },
   proyectos: {
     nombre: "Proyectos de ley",
     columnas: [
       ["Cambio", 12], ["Periodo", 10], ["Cámara", 12], ["Número", 18], ["Presentado", 12], ["Título", 80],
       ["Sumilla", 80], ["Autor", 30], ["Proponente", 24], ["Estado", 30], ["Rubro", 22], ["Ley", 22],
-      ["Fecha de la ley", 14], ["Enlace", 50],
+      ["Fecha de la ley", 14], ["Enlace", 14],
     ],
     sql: (filtro) => `SELECT id, (creado_en > $1::timestamptz) AS nuevo, periodo, camara, numero,
                              to_char(fecha_presentacion, 'YYYY-MM-DD') AS presentado, titulo, sumilla, autor, proponente,
@@ -34,7 +34,7 @@ const HOJAS = {
                       FROM proyectos_ley WHERE id > $3 AND ${filtro} ORDER BY id LIMIT ${LOTE}`,
     fila: (r) => [r.nuevo ? "Nuevo" : "Modificado", r.periodo, CAMARA[r.camara] || r.camara, r.numero, r.presentado,
       r.titulo, r.sumilla, r.autor, r.proponente, r.estado, r.rubro,
-      r.ley_numero ? `${r.ley_tipo || "Ley"} ${r.ley_numero}` : "", r.ley_fecha, enlace(r.url)],
+      r.ley_numero ? `${r.ley_tipo || "Ley"} ${r.ley_numero}` : "", r.ley_fecha, enlace(r.url, "Ver proyecto")],
   },
   seguimientos: {
     nombre: "Seguimiento de proyectos",
@@ -52,9 +52,20 @@ const HOJAS = {
 
 const CAMARA = { C: "Congreso", D: "Diputados", S: "Senado" };
 
-// Excel no acepta mas de 32.767 caracteres por celda
-const celda = (v) => (typeof v === "string" && v.length > 32000 ? v.slice(0, 32000) + "…" : v ?? "");
-const enlace = (url) => (url ? { text: url, hyperlink: url } : "");
+// Excel no acepta mas de 32.767 caracteres por celda ni caracteres de control (los quita al «reparar»)
+const CONTROL = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g;
+const celda = (v) => {
+  if (typeof v !== "string") return v ?? "";
+  const t = v.replace(CONTROL, " ");
+  return t.length > 32000 ? t.slice(0, 32000) + "…" : t;
+};
+// Enlace como formula HIPERVINCULO: Excel admite como maximo 65.530 enlaces normales por hoja (y aqui hay
+// cientos de miles); las formulas no tienen ese limite y se abren igual con un clic.
+const enlace = (url, texto = "Abrir") => {
+  if (!url || url.length > 250) return url || "";
+  const u = url.replace(CONTROL, "").replace(/"/g, '""');
+  return { formula: `HYPERLINK("${u}","${texto}")`, result: texto };
+};
 
 export async function ultimaDescarga(usuarioId) {
   const [d] = await consultar(
@@ -109,7 +120,7 @@ export function excelEnFlujo({ usuarioId, completa, desde }) {
       for (;;) {
         const filas = await consultar(h.sql(filtro), [base, hasta, ultimo]);
         for (const r of filas) {
-          const valores = h.fila(r).map(celda);
+          const valores = h.fila(r).map((v) => (v && typeof v === "object" ? v : celda(v)));
           hoja.addRow(completa ? valores.slice(1) : valores).commit();
         }
         cuenta[clave] += filas.length;
