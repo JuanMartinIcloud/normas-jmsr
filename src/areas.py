@@ -35,19 +35,20 @@ LOTE_FILTRO = 40
 MAX_TEXTO = 25000
 INICIO_HISTORIAL = date(2015, 1, 1)
 CALIFICACIONES = ["Favorable", "Desfavorable", "Para seguimiento"]
-# Modelos de IA: SOLO los Flash (los mas potentes que da gratis Google; los Pro no tienen cupo gratuito y los
-# Lite son mas debiles, no se usan para el monitoreo). Cada modelo tiene su propio cupo diario (se renueva a las
-# 3:00 de Lima). Si los Flash se agotan, el trabajo espera a la noche siguiente; nunca se usa un modelo mas debil.
-# - Mes en curso y pedidos de la web: todos los Flash, del mas nuevo al mas antiguo.
-# - Historia (meses anteriores, de a poco cada noche): solo tres Flash anteriores. Cuando esos tres llegan a su
-#   limite del dia, la historia se detiene hasta la noche siguiente; asi los Flash mas nuevos quedan libres para
-#   los pedidos «Revisar este mes» que alguien haga durante el dia.
-MODELOS_MES = list(gemini.FLASH)
-MODELOS_HISTORIA = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3-flash-preview"]
-MODELOS_PEDIDOS = list(gemini.FLASH)
+# Modelos de IA (cada modelo tiene su propio cupo diario gratis, que se renueva a las 3:00 de Lima):
+# - Primera revision (pedidos, mes en curso e historia): los Lite, que tienen cupo para revisarlo todo.
+#   La historia usa solo dos Lite, para dejar cupo a los pedidos que alguien haga durante el dia.
+# - Segunda opinion: tres modelos Flash (los mas potentes gratuitos) vuelven a analizar los documentos que la
+#   primera revision califico con 5 o mas en alguna area; su analisis reemplaza al de Lite. Los Flash mas
+#   nuevos (3.8, 3.7 y el «latest») quedan libres para lo que se lee en la web durante el dia.
+MODELOS_MES = gemini.modelos_lite()
+MODELOS_HISTORIA = gemini.LITE[:2]
+MODELOS_PEDIDOS = gemini.modelos_lite()
+MODELOS_SEGUNDA = ["gemini-3.6-flash", "gemini-3-flash-preview", "gemini-3.5-flash"]
+PUNTAJE_SEGUNDA = 5     # desde este puntaje (en alguna area) el documento pasa a la segunda opinion
 # Para pruebas: AREAS_MODELOS="modelo1,modelo2" obliga a usar solo esos modelos en todo
 if os.getenv("AREAS_MODELOS", "").strip():
-    MODELOS_MES = MODELOS_HISTORIA = MODELOS_PEDIDOS = [m.strip() for m in os.environ["AREAS_MODELOS"].split(",") if m.strip()]
+    MODELOS_MES = MODELOS_HISTORIA = MODELOS_PEDIDOS = MODELOS_SEGUNDA = [m.strip() for m in os.environ["AREAS_MODELOS"].split(",") if m.strip()]
 MODELOS = MODELOS_MES   # los que se usan en este momento (cambia segun el trabajo)
 
 
@@ -346,6 +347,31 @@ def analizar(cabecera, texto, areas):
 
 # --------------------------------------------------------------------------- proceso
 
+def _documento(tipo, f, txt, txt_ley):
+    """(cabecera, texto) de un documento; f tiene las columnas de normas_pendientes o proyectos_pendientes."""
+    if tipo == "N":
+        texto = txt.get(f[6]) or ""
+        if not texto:
+            try:
+                pdf = pdf_norma(f[7], f[1])
+                texto = texto_pdf(pdf, MAX_TEXTO) if pdf else ""
+            except Exception:  # noqa: BLE001
+                texto = ""
+        cab = (f"NORMA LEGAL publicada en El Peruano el {f[1]}\nTipo y número: {f[2]} {f[3] or ''}\n"
+               f"Entidad: {f[4] or ''}\nSumilla: {f[5] or ''}")
+        return cab, texto
+    texto_ley = txt_ley.get(f[10]) if f[10] else ""
+    texto = texto_ley or txt.get(f[9]) or ""
+    camara = {"D": "Cámara de Diputados", "S": "Senado", "C": "Congreso (unicameral)"}.get(f[3], f[3])
+    cab = (f"PROYECTO DE LEY {f[2]} ({camara})\nPresentado: {f[1]}\nProponente: {f[4] or ''}\n"
+           f"Autores: {(f[5] or '')[:300]}\nEstado: {f[6] or ''}\nTítulo: {f[7] or ''}\n"
+           f"Sumilla: {f[8] or ''}")
+    if texto_ley:
+        cab += ("\nIMPORTANTE: ya es ley. El texto de abajo es el de la LEY PUBLICADA, que prevalece "
+                "sobre lo que pedía el proyecto original.")
+    return cab, texto
+
+
 def _procesar(tipo, filas, todas, reloj, avance=None):
     """filas: documentos pendientes (la ultima columna es la lista de areas que faltan).
     todas: {area_id: (area_id, nombre, descripcion)}. Devuelve (documentos revisados, completo)."""
@@ -383,26 +409,7 @@ def _procesar(tipo, filas, todas, reloj, avance=None):
             for f in relevantes:
                 if not reloj.queda():
                     return revisados, False
-                if tipo == "N":
-                    texto = txt.get(f[6]) or ""
-                    if not texto:
-                        try:
-                            pdf = pdf_norma(f[7], f[1])
-                            texto = texto_pdf(pdf, MAX_TEXTO) if pdf else ""
-                        except Exception:  # noqa: BLE001
-                            texto = ""
-                    cab = (f"NORMA LEGAL publicada en El Peruano el {f[1]}\nTipo y número: {f[2]} {f[3] or ''}\n"
-                           f"Entidad: {f[4] or ''}\nSumilla: {f[5] or ''}")
-                else:
-                    texto_ley = txt_ley.get(f[10]) if f[10] else ""
-                    texto = texto_ley or txt.get(f[9]) or ""
-                    camara = {"D": "Cámara de Diputados", "S": "Senado", "C": "Congreso (unicameral)"}.get(f[3], f[3])
-                    cab = (f"PROYECTO DE LEY {f[2]} ({camara})\nPresentado: {f[1]}\nProponente: {f[4] or ''}\n"
-                           f"Autores: {(f[5] or '')[:300]}\nEstado: {f[6] or ''}\nTítulo: {f[7] or ''}\n"
-                           f"Sumilla: {f[8] or ''}")
-                    if texto_ley:
-                        cab += ("\nIMPORTANTE: ya es ley. El texto de abajo es el de la LEY PUBLICADA, que prevalece "
-                                "sobre lo que pedía el proyecto original.")
+                cab, texto = _documento(tipo, f, txt, txt_ley if tipo == "P" else {})
                 areas_doc = [todas[a] for a in sorted(afectadas[str(f[0])])]
                 try:
                     resumen, cambios, por_area, modelo, faltan = analizar(cab, texto[:MAX_TEXTO], areas_doc)
@@ -499,6 +506,91 @@ def mes_completo(ini, fin, area_ids):
                          p)[0][0]
 
 
+_COLS_N = "n.id, n.fecha, n.tipo, n.numero, n.entidad, n.sumilla, n.hash_unico, n.url_detalle"
+_COLS_P = """p.id, coalesce(p.fecha_presentacion, p.ley_fecha), p.numero, p.camara, p.proponente, p.autor,
+             CASE WHEN p.ley_numero IS NOT NULL
+                  THEN 'Aprobada y publicada: ' || coalesce(p.ley_tipo, 'Ley') || ' N° ' || p.ley_numero ||
+                       coalesce(' (El Peruano, ' || p.ley_fecha || ')', '')
+                  ELSE p.estado END,
+             p.titulo, p.sumilla, p.periodo || '|' || p.camara || '|' || p.numero,
+             (SELECT n.hash_unico FROM normas n WHERE n.id = (p.ley_docs->'ley'->>'id')::bigint)"""
+
+
+def segunda_opinion(reloj):
+    """Los Flash vuelven a analizar, para TODAS las areas, los documentos que la primera revision (Lite)
+    califico con 5 o mas en alguna area. Orden: mes en curso, meses con pedidos «Revisar este mes» y luego
+    del mes mas reciente al mas antiguo; dentro de cada mes, del puntaje mas alto al mas bajo. Su analisis
+    reemplaza al de Lite (tambien puede agregar areas que Lite no vio o quitar las que no corresponden).
+    Cuando los Flash llegan a su limite del dia, sigue la noche siguiente donde quedo (area_cobertura.segunda_en)."""
+    global MODELOS
+    MODELOS = MODELOS_SEGUNDA
+    flash = list(MODELOS_SEGUNDA) + list(gemini.FLASH)
+    # Los documentos que ya analizo un Flash (por ejemplo, pruebas anteriores) no necesitan segunda opinion
+    consultar("""UPDATE area_cobertura c SET segunda_en = now() WHERE c.segunda_en IS NULL
+                 AND EXISTS (SELECT 1 FROM area_revision r WHERE r.tipo = c.tipo AND r.ref_id = c.ref_id)
+                 AND NOT EXISTS (SELECT 1 FROM area_revision r WHERE r.tipo = c.tipo AND r.ref_id = c.ref_id
+                                   AND NOT r.modelo = ANY(%s))""", (flash,))
+    todas = {a[0]: a for a in areas_activas()}
+    mes_actual = hoy_lima().replace(day=1)
+    hechos = cambiados = 0
+    while reloj.queda():
+        lote = consultar("""
+            SELECT r.tipo, r.ref_id, max(r.puntaje)
+            FROM area_revision r JOIN area_cobertura c ON c.tipo = r.tipo AND c.ref_id = r.ref_id
+            WHERE c.segunda_en IS NULL
+            GROUP BY r.tipo, r.ref_id
+            HAVING max(r.puntaje) >= %s
+            ORDER BY date_trunc('month', max(r.fecha)) = %s DESC,
+                     to_char(max(r.fecha), 'YYYY-MM') IN (SELECT mes FROM area_pedidos) DESC,
+                     date_trunc('month', max(r.fecha)) DESC, max(r.puntaje) DESC, max(r.fecha) DESC
+            LIMIT 20""", (PUNTAJE_SEGUNDA, mes_actual))
+        if not lote:
+            break
+        for tipo, ref_id, _ in lote:
+            if not reloj.queda():
+                break
+            if tipo == "N":
+                f = consultar(f"SELECT {_COLS_N} FROM normas n WHERE n.id = %s", (ref_id,))
+                txt, txt_ley = textos("N", [f[0][6]]) if f else {}, {}
+            else:
+                f = consultar(f"SELECT {_COLS_P} FROM proyectos_ley p WHERE p.id = %s", (ref_id,))
+                txt = textos("P", [f[0][9]]) if f else {}
+                txt_ley = textos("N", [f[0][10]]) if f and f[0][10] else {}
+            if not f:
+                consultar("UPDATE area_cobertura SET segunda_en = now() WHERE tipo = %s AND ref_id = %s", (tipo, ref_id))
+                continue
+            f = f[0]
+            cab, texto = _documento(tipo, f, txt, txt_ley)
+            antes = {a: (cal, p) for a, cal, p in consultar(
+                "SELECT area_id, calificacion, puntaje FROM area_revision WHERE tipo = %s AND ref_id = %s", (tipo, ref_id))}
+            try:
+                resumen, cambios, por_area, modelo, _ = analizar(cab, texto[:MAX_TEXTO], list(todas.values()))
+            except SinRespuesta as e:
+                print(f"  los Flash no respondieron ({e}); la segunda opinion sigue en la proxima ejecucion.")
+                MODELOS = MODELOS_MES
+                print(f"  segunda opinion: {hechos} documentos revisados por Flash, {cambiados} con cambios")
+                return False
+            lectura = "texto completo" if texto else "sumilla"
+            guardar_analisis([{"tipo": tipo, "ref_id": ref_id, "area_id": aid, "fecha": f[1],
+                               "calificacion": d["calificacion"], "puntaje": d["puntaje"], "impacto": d["impacto"],
+                               "resumen": resumen, "cambios": cambios, "comentario": d["comentario"],
+                               "lectura": lectura, "modelo": modelo}
+                              for aid, d in por_area.items() if d["relevante"]])
+            # Areas que Flash considera que no corresponden: se quita el analisis de Lite
+            quitar = [aid for aid, d in por_area.items() if not d["relevante"] and aid in antes]
+            if quitar:
+                consultar("DELETE FROM area_revision WHERE tipo = %s AND ref_id = %s AND area_id = ANY(%s)",
+                          (tipo, ref_id, quitar))
+            cubrir(tipo, [(ref_id, f[1], list(por_area))])
+            consultar("UPDATE area_cobertura SET segunda_en = now() WHERE tipo = %s AND ref_id = %s", (tipo, ref_id))
+            despues = {aid: (d["calificacion"], d["puntaje"]) for aid, d in por_area.items() if d["relevante"]}
+            hechos += 1
+            cambiados += despues != antes
+    MODELOS = MODELOS_MES
+    print(f"  segunda opinion: {hechos} documentos revisados por Flash, {cambiados} con cambios")
+    return True
+
+
 def procesar_pedidos(reloj):
     """Area y mes pedidos desde la web («Revisar este mes»), en orden de llegada, con su avance."""
     global MODELOS
@@ -544,7 +636,7 @@ def procesar_historico(reloj):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("modo", choices=["diario", "pedidos", "historico", "rango", "ver", "rehacer"])
+    ap.add_argument("modo", choices=["diario", "pedidos", "historico", "rango", "ver", "rehacer", "segunda"])
     ap.add_argument("fechas", nargs="*")
     ap.add_argument("--max-minutos", type=float, default=300)
     a = ap.parse_args()
@@ -566,12 +658,17 @@ def main():
         MODELOS = MODELOS_MES
         if not procesar_rango(desde, hoy + timedelta(days=1), None, reloj):
             return
+        # Segunda opinion con Flash (mes en curso primero; se detiene sola al agotarse el cupo de Flash)
+        segunda_opinion(reloj)
+        MODELOS = MODELOS_MES
         # Lo que quede de tiempo y de cupo de la IA, para el historial
         if cupos.principal_agotada():
             return
         procesar_historico(reloj)
     elif a.modo == "historico":
         procesar_historico(reloj)
+    elif a.modo == "segunda":
+        segunda_opinion(reloj)
     elif a.modo == "rehacer":
         desde, hasta = date.fromisoformat(a.fechas[0]), date.fromisoformat(a.fechas[1])
         rehacer(desde, hasta)

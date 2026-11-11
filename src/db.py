@@ -48,6 +48,8 @@ _ETAPAS = [
                                      WHERE table_schema = 'public' AND table_name = 'area_pedidos')"""),
     ("-- Etapa 17:", """SELECT EXISTS (SELECT 1 FROM information_schema.tables
                                      WHERE table_schema = 'public' AND table_name = 'excel_descargas')"""),
+    ("-- Etapa 18:", """SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public'
+                                     AND table_name = 'area_cobertura' AND column_name = 'segunda_en')"""),
 ]
 
 

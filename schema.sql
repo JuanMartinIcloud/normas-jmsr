@@ -361,3 +361,8 @@ CREATE TABLE IF NOT EXISTS excel_descargas (
     creado_en   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_excel_usuario ON excel_descargas (usuario_id, hasta DESC);
+
+-- ---------------------------------------------------------------------------
+-- Etapa 18: segunda opinion con Flash. Momento en que los Flash revisaron el documento (NULL = todavia no).
+-- ---------------------------------------------------------------------------
+ALTER TABLE area_cobertura ADD COLUMN IF NOT EXISTS segunda_en TIMESTAMPTZ;
