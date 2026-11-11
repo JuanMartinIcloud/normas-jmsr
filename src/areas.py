@@ -15,6 +15,7 @@ de los que afectan a un area, en area_revision. La web arma el reporte de cada a
 Opciones: --max-minutos 300
 """
 import argparse
+import os
 import re
 import time
 import unicodedata
@@ -44,6 +45,9 @@ CALIFICACIONES = ["Favorable", "Desfavorable", "Para seguimiento"]
 MODELOS_MES = list(gemini.FLASH)
 MODELOS_HISTORIA = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3-flash-preview"]
 MODELOS_PEDIDOS = list(gemini.FLASH)
+# Para pruebas: AREAS_MODELOS="modelo1,modelo2" obliga a usar solo esos modelos en todo
+if os.getenv("AREAS_MODELOS", "").strip():
+    MODELOS_MES = MODELOS_HISTORIA = MODELOS_PEDIDOS = [m.strip() for m in os.environ["AREAS_MODELOS"].split(",") if m.strip()]
 MODELOS = MODELOS_MES   # los que se usan en este momento (cambia segun el trabajo)
 
 

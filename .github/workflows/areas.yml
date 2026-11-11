@@ -15,6 +15,9 @@ on:
       minutos:
         description: "Minutos maximos (vacio: 300, o 120 para pedidos)"
         default: ""
+      modelos:
+        description: "Solo para pruebas: modelos a usar, separados por comas (vacio: los normales)"
+        default: ""
 
 # Un pedido de la web no espera a que termine la ejecucion de la noche: van en grupos distintos
 concurrency:
@@ -40,6 +43,7 @@ jobs:
       - name: Analizar
         env:
           MINUTOS: ${{ github.event.inputs.minutos }}
+          AREAS_MODELOS: ${{ github.event.inputs.modelos }}
         run: |
           set +e
           MODO="${{ github.event.inputs.modo || 'diario' }}"
