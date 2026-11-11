@@ -17,6 +17,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
-      - run: python herramientas/probar_congreso.py
+      - run: python herramientas/probar_congreso_antiguo.py
         env:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
