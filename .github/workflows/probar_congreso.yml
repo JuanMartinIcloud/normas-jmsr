@@ -1,0 +1,22 @@
+name: Probar Congreso
+
+# Prueba si el portal del Congreso tiene proyectos de periodos anteriores a 2021 (solo lee).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python herramientas/probar_congreso.py
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
